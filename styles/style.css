@@ -349,25 +349,32 @@ body {
 
 /* Clear button */
 
-.clear-button {
-    display: block;
+/* Action buttons container */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
 
-    width: 60%;
-
-    margin: 25px auto 0;
+/* Clear and New Calculator buttons */
+.clear-button,
+.new-calculator-button {
+    flex: 1;
     padding: 15px;
-
-    font-size: 20px;
-
+    font-size: 18px;
     color: #4b5563;
     background-color: #f8fafc;
-
     border: 1.5px solid #d1d5db;
     border-radius: 9px;
-
     cursor: pointer;
-
     transition: background-color 0.2s ease;
+}
+
+/* Hover effects */
+.clear-button:hover,
+.new-calculator-button:hover {
+    background-color: #e5e7eb;
 }
 
 .clear-button:hover {
@@ -428,7 +435,9 @@ body {
         font-size: 18px;
     }
 
-    .clear-button {
-        width: 80%;
+    .clear-button,
+    .new-calculator-button {
+        font-size: 16px;
+        padding: 12px 8px;
     }
 }

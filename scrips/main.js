@@ -17,8 +17,7 @@ var subtractButton = document.getElementById('operation-subtract');
 function zeroDivision() {
 
     if (
-        (Number(firstNumber.value) === 0 ||
-         Number(secondNumber.value) === 0) &&
+        (Number(secondNumber.value) === 0) &&
         divideButton.checked
     ) {
         resultField.textContent = 'Error';
@@ -38,18 +37,31 @@ function checkEmptyFields() {
     }
 }
 
-
-
+function isOperationSelected (){
+    const selectedOperation = document.querySelector('input[name="operation"]:checked') !== null;
+    if(!selectedOperation) {
+        resultField.textContent = 'Please select an operation';
+        return true;
+    }else{
+        return false;
+    }
+}
 
 
 /* Calculate button */
 calculateButton.onclick = function() {
+
     let firstNumberValue = Number(firstNumber.value);
     let secondNumberValue = Number(secondNumber.value);
 
     let isEmptyFields = checkEmptyFields();
     if(isEmptyFields) {
      return;
+    }
+
+    let isOperationSele = isOperationSelected();
+    if(isOperationSele) {
+        return;
     }
 
    let isZeroDivision = zeroDivision();
@@ -75,12 +87,14 @@ calculateButton.onclick = function() {
 /* Clear button */
 clearButton.onclick = function() {
     resultField.textContent = '—';
+    firstNumber.value = " ";
+    secondNumber.value = " ";
 }
 
 /* verify 0 in division*/
 
 firstNumber.oninput = function() {
-    if(secondNumber.value === '0' || firstNumber.value === '0' && divideButton.checked) {
+    if(secondNumber.value === '0' && divideButton.checked) {
         resultField.textContent = 'Error';
         
     }
