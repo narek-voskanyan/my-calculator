@@ -1,5 +1,7 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,171 +17,213 @@
 
         <!-- Header -->
         <header class="header">
+
             <img
                 src="images/icon-calculator.png"
                 alt="Calculator"
-                id="calculator-image"
+                class="calculator-image"
             >
 
             <div class="header-text">
-                <h1 id="title">Calculator</h1>
-                <p id="description">Simple calculations</p>
+                <h1 class="title">Calculator</h1>
+                <p class="description">Simple calculations</p>
             </div>
+
         </header>
 
-        <!-- Calculator -->
-        <section class="calculator">
 
-            <!-- Input fields -->
-            <div class="input-fields">
+        <!-- List of calculators -->
+        <div class="calculator-list">
 
-                <div class="input-field-container">
-                    <label
-                        class="input-field-label"
-                        for="input-first-number-field"
-                    >
-                        First number
+            <!-- Calculator -->
+            <section class="calculator">
+
+                <!-- Input fields -->
+                <div class="input-fields">
+
+                    <div class="input-field-container">
+
+                        <label class="input-field-label">
+                            First number
+                        </label>
+
+                        <input
+                            class="input-field first-number"
+                            type="number"
+                            placeholder="Enter first number"
+                        >
+
+                    </div>
+
+
+                    <div class="input-field-container">
+
+                        <label class="input-field-label">
+                            Second number
+                        </label>
+
+                        <input
+                            class="input-field second-number"
+                            type="number"
+                            placeholder="Enter second number"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- Math operators -->
+                <div class="operator-container">
+
+                    <p class="operation-label">
+                        Operation
+                    </p>
+                    <label class="clear-operator-label">
+                        <input
+                            type="checkbox"
+                            class="clear-operator-checkbox"
+                        >
+                        Remove operator on clear
                     </label>
 
-                    <input
-                        class="input-field"
-                        type="number"
-                        id="input-first-number-field"
-                        placeholder="Enter first number"
-                    >
-                </div>
+                    <div class="operator-buttons">
 
-                <div class="input-field-container">
-                    <label
-                        class="input-field-label"
-                        for="input-second-number-field"
-                    >
-                        Second number
-                    </label>
-
-                    <input
-                        class="input-field"
-                        type="number"
-                        id="input-second-number-field"
-                        placeholder="Enter second number"
-                    >
-                </div>
-
-            </div>
-
-       
-            <!-- Math operators -->
-            <div class="operator-container">
-
-                <p class="operation-label">Operation</p>
-
-                <div class="operator-buttons">
-
-                    <!-- Addition -->
-                    <div class="operator-option">
-                        <input
-                            type="radio"
-                            id="operation-add"
-                            name="operation"
-                            value="+"
-                            class="operator-radio"
-                        >
-                        <label for="operation-add" class="operator-button-style">
-                            +
-                        </label>
-                    </div>
-
-                    <!-- Subtraction -->
-                    <div class="operator-option">
-                        <input
-                            type="radio"
-                            id="operation-subtract"
-                            name="operation"
-                            value="-"
-                            class="operator-radio"
-                        >
-                        <label for="operation-subtract" class="operator-button-style">
-                            −
-                        </label>
-                    </div>
-
-                    <!-- Multiplication -->
-                    <div class="operator-option">
-                        <input
-                            type="radio"
-                            id="operation-multiply"
-                            name="operation"
-                            value="*"
-                            class="operator-radio"
-                        >
-                        <label for="operation-multiply" class="operator-button-style">
-                            ×
-                        </label>
-                    </div>
-
-                    <!-- Division -->
-                    <div class="operator-option">
-                        <input
-                            type="radio"
-                            id="operation-divide"
-                            name="operation"
-                            value="/"
-                            class="operator-radio"
-                        >
-                        <label for="operation-divide" class="operator-button-style">
-                            ÷
-                        </label>
+                        <!-- Addition -->
+                        <div class="operator-option">
+                            <input
+                                type="radio"
+                                id="operation-add-1"
+                                name="operation-1"
+                                value="+"
+                                class="operator-radio operation-add"
+                            >
+                    
+                            <label
+                                for="operation-add-1"
+                                class="operator-button-style"
+                            >
+                                +
+                            </label>
+                        </div>
+                    
+                    
+                        <!-- Subtraction -->
+                        <div class="operator-option">
+                            <input
+                                type="radio"
+                                id="operation-subtract-1"
+                                name="operation-1"
+                                value="-"
+                                class="operator-radio operation-subtract"
+                            >
+                    
+                            <label
+                                for="operation-subtract-1"
+                                class="operator-button-style"
+                            >
+                                −
+                            </label>
+                        </div>
+                    
+                    
+                        <!-- Multiplication -->
+                        <div class="operator-option">
+                            <input
+                                type="radio"
+                                id="operation-multiply-1"
+                                name="operation-1"
+                                value="*"
+                                class="operator-radio operation-multiply"
+                            >
+                    
+                            <label
+                                for="operation-multiply-1"
+                                class="operator-button-style"
+                            >
+                                ×
+                            </label>
+                        </div>
+                    
+                    
+                        <!-- Division -->
+                        <div class="operator-option">
+                            <input
+                                type="radio"
+                                id="operation-divide-1"
+                                name="operation-1"
+                                value="/"
+                                class="operator-radio operation-divide"
+                            >
+                    
+                            <label
+                                for="operation-divide-1"
+                                class="operator-button-style"
+                            >
+                                ÷
+                            </label>
+                        </div>
+                    
                     </div>
 
                 </div>
-            </div>
 
-            <!-- Calculate button -->
-            <button
-                class="calculate-button"
-                id="calculate-button"
-                type="button"
-            >
-                Calculate
-            </button>
 
-            <!-- Result -->
-            <div class="result-container" aria-live="polite">
+                <!-- Calculate button -->
+                <button
+                    class="calculate-button"
+                    type="button"
+                >
+                    Calculate
+                </button>
 
-                <p class="result-label">Result</p>
 
-                <output id="result">—</output>
+                <!-- Result -->
+                <div
+                    class="result-container"
+                    aria-live="polite"
+                >
 
-            </div>
+                    <p class="result-label">
+                        Result
+                    </p>
 
-            <!-- Action buttons -->
-<div class="action-buttons">
+                    <output class="result">—</output>
 
-    <!-- Clear button -->
-    <button
-        class="clear-button"
-        id="clear-button"
-        type="button"
-    >
-        Clear
-    </button>
+                </div>
 
-    <!-- New Calculator button -->
-    <button
-        class="new-calculator-button"
-        id="new-calculator-button"
-        type="button"
-    >
-        New Calculator
-    </button>
 
-</div>
+                <!-- Action buttons -->
+                <div class="action-buttons">
 
-        </section>
+                    <!-- Clear button -->
+                    <button
+                        class="clear-button"
+                        type="button"
+                    >
+                        Clear
+                    </button>
+
+
+                    <!-- New Calculator button -->
+                    <button
+                        class="new-calculator-button"
+                        type="button"
+                    >
+                        New Calculator
+                    </button>
+
+                </div>
+
+            </section>
+
+        </div>
 
     </main>
+
 
     <script src="scrips/main.js"></script>
 
 </body>
+
 </html>
