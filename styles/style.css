@@ -214,6 +214,25 @@ body {
     background-color: #dbe4ef;
 }
 
+/* Drag */
+
+.drag-calculator-button {
+    border: none;
+    background: transparent;
+
+    padding: 4px;
+
+    font-size: 18px;
+    line-height: 1;
+
+    color: #55719a;
+
+    cursor: grab;
+}
+.drag-calculator-button:hover {
+    color: #1f3f68;
+}
+
 
 /* Remove */
 
