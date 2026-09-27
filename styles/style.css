@@ -107,7 +107,254 @@ body {
 .add-calculator-button:active {
     transform: scale(0.97);
 }
+/* =========================
+   CALCULATOR WORKSPACE
+   ========================= */
 
+   .calculator-workspace {
+    display: grid;
+
+    grid-template-columns:
+        300px minmax(0, 1fr);
+
+    gap: 25px;
+
+    align-items: start;
+}
+
+
+/* =========================
+   CONTROL PANEL
+   ========================= */
+
+.control-panel {
+    padding: 20px;
+
+    background-color: #ffffff;
+
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+}
+
+
+/* Control panel title */
+
+.control-panel-title {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 700;
+
+    color: #14233f;
+}
+
+
+/* Description */
+
+.control-panel-description {
+    margin: 10px 0 18px;
+
+    font-size: 14px;
+    line-height: 1.5;
+
+    color: #6b7280;
+}
+
+
+/* Collapse / Expand buttons */
+
+.control-panel-buttons {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 8px;
+
+    margin-bottom: 20px;
+}
+
+/* =========================================
+   CONTROL PANEL CALCULATOR ROW
+   ========================================= */
+
+   .calculator-control-row {
+    position: relative;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr) auto;
+
+    grid-template-areas:
+        "title remove"
+        "result minimize";
+
+    align-items: center;
+
+    row-gap: 14px;
+    column-gap: 12px;
+
+    padding: 14px 12px 10px 38px;
+
+    margin-bottom: 10px;
+
+    border: 1px solid #d9e2f0;
+    border-radius: 10px;
+
+    background-color: #ffffff;
+}
+
+
+/* Calculator title */
+
+.calculator-control-title {
+    grid-area: title;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    color: #16335c;
+}
+
+
+/* Result text */
+
+.calculator-control-result {
+    grid-area: result;
+
+    min-width: 0;
+
+    font-size: 11px;
+    color: #4a5f7a;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+
+/* Collapse / Expand button */
+
+.calculator-control-minimize {
+    grid-area: minimize;
+
+    padding: 7px 10px;
+
+    border: 1px solid #d2ddeb;
+    border-radius: 9px;
+
+    background-color: #ffffff;
+
+    color: #16335c;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+.calculator-control-minimize:hover {
+    background-color: #f5f8fc;
+}
+
+
+/* Remove X button */
+
+.calculator-control-remove {
+    grid-area: remove;
+
+    justify-self: end;
+    align-self: start;
+
+    border: none;
+    padding: 2px 5px;
+
+    background: none;
+
+    color: #7c8da8;
+
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+.calculator-control-remove:hover {
+    color: #16335c;
+}
+
+
+.collapse-all-button,
+.expand-all-button {
+    padding: 10px;
+
+    font-size: 13px;
+
+    color: #14233f;
+    background-color: #ffffff;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+.collapse-all-button:hover,
+.expand-all-button:hover {
+    background-color: #f3f7fe;
+    border-color: #287df0;
+}
+
+
+/* =========================
+   CONTROL LIST
+   ========================= */
+
+.calculator-control-list {
+    min-height: 70px;
+}
+
+
+/* Empty message */
+
+.control-panel-empty {
+    margin: 0;
+
+    font-size: 14px;
+
+    color: #6b7280;
+}
+
+
+/* =========================
+   CONTROL PANEL FOOTER
+   ========================= */
+
+.control-panel-footer {
+    margin-top: 25px;
+    padding-top: 18px;
+
+    border-top: 1px solid #e5e7eb;
+
+    font-size: 13px;
+
+    color: #55719a;
+}
+
+
+.control-panel-footer strong {
+    color: #14233f;
+}
+
+
+.control-panel-footer p {
+    margin: 7px 0 0;
+
+    line-height: 1.5;
+}
 
 /* =========================
    CALCULATOR LIST
@@ -122,6 +369,7 @@ body {
     gap: 25px;
 
     align-items: start;
+    min-width: 0;
 }
 
 
@@ -599,6 +847,9 @@ body {
    ========================= */
 
 @media (max-width: 850px) {
+    .calculator-workspace {
+        grid-template-columns: 1fr;
+    }
 
     .calculator-list {
         grid-template-columns: 1fr;

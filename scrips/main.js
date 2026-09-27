@@ -6,6 +6,10 @@ class Calculator {
     constructor(container, calculatorData = null) {
 
         this.container = container;
+
+        this.container.calculatorInstance =
+            this;
+        
         this.container.draggable = false;
         
         if (
@@ -129,7 +133,7 @@ class Calculator {
             // Give radio buttons unique names FIRST
                 this.setupRadioButtons();
 
-                
+
             if (calculatorData !== null) {
 
                 this.firstNumber.value =
@@ -173,7 +177,9 @@ class Calculator {
           
 
         this.setupCalculator();
+        this.createControlPanelRow();
         this.addEventListeners();
+        
        
     }
 
@@ -201,11 +207,162 @@ class Calculator {
         return `${firstNumberValue} ${operator} ${secondNumberValue} = ${result}`;
     }
 
+    updateControlPanelResult() {
+
+        this.controlResult.textContent =
+            `Result: ${this.resultField.textContent}`;
+    }
+
 
     setupCalculator() {
 
         this.calculatorTitle.textContent =
             `Calculator ${this.id}`;
+    }
+
+    createControlPanelRow() {
+
+        const controlList =
+            document.querySelector(
+                '.calculator-control-list'
+            );
+    
+    
+        // Find empty message
+        const emptyMessage =
+            controlList.querySelector(
+                '.control-panel-empty'
+            );
+    
+    
+        // Remove empty message if calculator exists
+        if (emptyMessage !== null) {
+            emptyMessage.remove();
+        }
+    
+    
+        // Create control row
+        const controlRow =
+            document.createElement('div');
+    
+        controlRow.classList.add(
+            'calculator-control-row'
+        );
+    
+        controlRow.dataset.calculatorId =
+            this.id;
+    
+    
+        // Create calculator title
+        const controlTitle =
+            document.createElement('span');
+    
+        controlTitle.classList.add(
+            'calculator-control-title'
+        );
+    
+        controlTitle.textContent =
+            `Calculator ${this.id}`;
+    
+    
+        // Create result text
+        this.controlResult =
+            document.createElement('span');
+    
+        this.controlResult.classList.add(
+            'calculator-control-result'
+        );
+    
+    
+        // Synchronize result with calculator
+        this.updateControlPanelResult();
+    
+    
+        // Create Collapse / Expand button
+        const minimizeControlButton =
+            document.createElement('button');
+    
+        minimizeControlButton.classList.add(
+            'calculator-control-minimize'
+        );
+    
+        minimizeControlButton.type =
+            'button';
+    
+    
+        // Check current calculator state
+        const isMinimized =
+            this.container.classList.contains(
+                'minimized'
+            );
+    
+        minimizeControlButton.textContent =
+            isMinimized
+                ? 'Expand'
+                : 'Collapse';
+    
+    
+        // Collapse / Expand from Control Panel
+        minimizeControlButton.addEventListener(
+            'click',
+            () => {
+    
+                this.minimizeCalculator();
+                saveCalculators();
+    
+            }
+        );
+    
+    
+        // Create remove button
+        const removeControlButton =
+            document.createElement('button');
+    
+        removeControlButton.classList.add(
+            'calculator-control-remove'
+        );
+    
+        removeControlButton.type =
+            'button';
+    
+        removeControlButton.textContent =
+            '×';
+    
+    
+        // Remove calculator
+        removeControlButton.addEventListener(
+            'click',
+            () => {
+    
+                this.removeCalculator();
+                saveCalculators();
+    
+            }
+        );
+    
+    
+        // Add elements to Control Panel row
+        controlRow.appendChild(
+            controlTitle
+        );
+    
+        controlRow.appendChild(
+            this.controlResult
+        );
+    
+        controlRow.appendChild(
+            minimizeControlButton
+        );
+    
+        controlRow.appendChild(
+            removeControlButton
+        );
+    
+    
+        // Add completed row to Control Panel
+        controlList.appendChild(
+            controlRow
+        );
     }
 
 
@@ -334,10 +491,12 @@ class Calculator {
             Number(this.secondNumber.value);
 
 
-        const isEmptyFields =
+            const isEmptyFields =
             this.checkEmptyFields();
-
+        
         if (isEmptyFields) {
+        
+            this.updateControlPanelResult();
             return;
         }
 
@@ -346,16 +505,19 @@ class Calculator {
             this.isOperationSelected();
 
         if (isOperationSelected) {
+            this.updateControlPanelResult();
             return;
         }
 
 
         const isZeroDivision =
-            this.zeroDivision();
-
-        if (isZeroDivision) {
-            return;
-        }
+        this.zeroDivision();
+    
+    if (isZeroDivision) {
+    
+        this.updateControlPanelResult();
+        return;
+    }
 
 
         let result = 0;
@@ -390,13 +552,17 @@ class Calculator {
 
         this.resultField.textContent =
             result;
+      
+            this.updateControlPanelResult();
     }
 
 
     clear() {
 
         this.resultField.textContent =
-            '—';
+        '—';
+        this.updateControlPanelResult();
+
 
         this.firstNumber.value =
             '';
@@ -424,61 +590,131 @@ class Calculator {
 
     removeCalculator() {
 
+        // Remove calculator card
         this.container.remove();
+    
+    
+        // Find Control Panel list
+        const controlList =
+            document.querySelector(
+                '.calculator-control-list'
+            );
+    
+    
+        // Find corresponding Control Panel row
+        const controlRow =
+            controlList.querySelector(
+                `.calculator-control-row[data-calculator-id="${this.id}"]`
+            );
+    
+    
+        // Remove Control Panel row
+        if (controlRow !== null) {
+            controlRow.remove();
+        }
+    
+    
+        // Check if any calculator rows are left
+        const remainingRows =
+            controlList.querySelectorAll(
+                '.calculator-control-row'
+            );
+    
+    
+        // If there are no calculators, show empty message
+        if (remainingRows.length === 0) {
+    
+            const emptyMessage =
+                document.createElement('p');
+    
+            emptyMessage.classList.add(
+                'control-panel-empty'
+            );
+    
+            emptyMessage.textContent =
+                'The list is empty.';
+    
+            controlList.appendChild(
+                emptyMessage
+            );
+        }
     }
 
 
-    minimizeCalculator() {
+    setMinimized(minimized) {
 
+        // Set calculator state
         this.container.classList.toggle(
-            'minimized'
+            'minimized',
+            minimized
         );
-
-
+    
+    
+        // Update calculator header button
+        this.minimizeCalculatorButton.textContent =
+            minimized
+                ? '+'
+                : '−';
+    
+        this.minimizeCalculatorButton.setAttribute(
+            'aria-label',
+            minimized
+                ? 'Restore calculator'
+                : 'Minimize calculator'
+        );
+    
+    
+        // Update minimized result
+        if (minimized) {
+    
+            this.minimizedResult.textContent =
+                this.setupMinimizedResult();
+        }
+    
+    
+        // Find this calculator's Control Panel row
+        const controlRow =
+            document.querySelector(
+                `.calculator-control-row[data-calculator-id="${this.id}"]`
+            );
+    
+    
+        if (controlRow !== null) {
+    
+            const controlButton =
+                controlRow.querySelector(
+                    '.calculator-control-minimize'
+                );
+    
+    
+            // Update Control Panel button
+            if (controlButton !== null) {
+    
+                controlButton.textContent =
+                    minimized
+                        ? 'Expand'
+                        : 'Collapse';
+            }
+        }
+    }
+    
+    
+    minimizeCalculator() {
+    
         const isMinimized =
             this.container.classList.contains(
                 'minimized'
             );
-
-
-        if (isMinimized) {
-
-            this.minimizeCalculatorButton.textContent =
-                '+';
-
-            this.minimizeCalculatorButton.setAttribute(
-                'aria-label',
-                'Restore calculator'
-            );
-
-        } else {
-
-            this.minimizeCalculatorButton.textContent =
-                '−';
-
-            this.minimizeCalculatorButton.setAttribute(
-                'aria-label',
-                'Minimize calculator'
-            );
-
-        }
+    
+        this.setMinimized(
+            !isMinimized
+        );
     }
 
     addEventListeners() {
 
-        this.minimizeButton.addEventListener(
-            'click',
-            () => {
-    
-                let resultText =
-                    this.setupMinimizedResult();
-    
-                this.minimizedResult.textContent =
-                    resultText;
-            }
-        );
-    
-    
+   
+        // Calculate
         this.calculateButton.addEventListener(
             'click',
             () => {
@@ -489,7 +725,7 @@ class Calculator {
         );
     
     
-        // Drag event listener
+        // Enable dragging only from drag button
         this.dragButton.addEventListener(
             'mousedown',
             () => {
@@ -499,6 +735,7 @@ class Calculator {
         );
     
     
+        // Start dragging calculator
         this.container.addEventListener(
             'dragstart',
             () => {
@@ -509,6 +746,7 @@ class Calculator {
         );
     
     
+        // Finish dragging calculator
         this.container.addEventListener(
             'dragend',
             () => {
@@ -522,6 +760,7 @@ class Calculator {
         );
     
     
+        // Clear calculator
         this.clearButton.addEventListener(
             'click',
             () => {
@@ -532,6 +771,7 @@ class Calculator {
         );
     
     
+        // Remove calculator using calculator X
         this.removeCalculatorButton.addEventListener(
             'click',
             () => {
@@ -542,6 +782,7 @@ class Calculator {
         );
     
     
+        // Minimize calculator
         this.minimizeCalculatorButton.addEventListener(
             'click',
             () => {
@@ -550,6 +791,8 @@ class Calculator {
                 saveCalculators();
             }
         );
+        
+    
     }
 }
 
@@ -616,8 +859,39 @@ const addCalculatorButton =
     document.querySelector(
         '.add-calculator-button'
     );
+const collapseAllButton =
+    document.querySelector(
+        '.collapse-all-button'
+    );
 
+const expandAllButton =
+    document.querySelector(
+        '.expand-all-button'
+    );
 
+    // Collapse all calculators 
+    collapseAllButton.addEventListener(
+        'click',
+        () => {
+    
+            setAllCalculatorsMinimized(
+                true
+            );
+        }
+    );
+    
+    // Expand all calculators 
+    expandAllButton.addEventListener(
+        'click',
+        () => {
+    
+            setAllCalculatorsMinimized(
+                false
+            );
+        }
+    ); 
+
+// Add calculator button//
 addCalculatorButton.addEventListener(
     'click',
     () => {
@@ -760,22 +1034,29 @@ const calculatorList =
                 'calculators'
             );
     
-        // No saved data
+    
+        // First visit: no LocalStorage yet
         if (calculatorsJSON === null) {
+    
             createCalculator();
             return;
         }
+    
     
         const calculatorsData =
-            JSON.parse(calculatorsJSON);
+            JSON.parse(
+                calculatorsJSON
+            );
     
-        // Saved array is empty
+    
+        // Saved empty array means:
+        // user intentionally has 0 calculators
         if (calculatorsData.length === 0) {
-            createCalculator();
             return;
         }
     
-        // Create calculators from saved data
+    
+        // Restore saved calculators
         calculatorsData.forEach(
             (calculatorData) => {
     
@@ -785,4 +1066,24 @@ const calculatorList =
     
             }
         );
+    }
+
+    function setAllCalculatorsMinimized(minimized) {
+
+        const calculators =
+            document.querySelectorAll(
+                '.calculator'
+            );
+    
+    
+        calculators.forEach((calculator) => {
+    
+            calculator.calculatorInstance.setMinimized(
+                minimized
+            );
+    
+        });
+    
+    
+        saveCalculators();
     }
