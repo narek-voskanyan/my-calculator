@@ -237,6 +237,7 @@ class Calculator {
     
         // Remove empty message if calculator exists
         if (emptyMessage !== null) {
+    
             emptyMessage.remove();
         }
     
@@ -251,6 +252,56 @@ class Calculator {
     
         controlRow.dataset.calculatorId =
             this.id;
+    
+    
+        // Row is NOT draggable by default
+        controlRow.draggable =
+            false;
+    
+    
+        // Create drag button
+        const dragControlButton =
+            document.createElement('button');
+    
+        dragControlButton.classList.add(
+            'calculator-control-drag'
+        );
+    
+        dragControlButton.type =
+            'button';
+    
+        dragControlButton.textContent =
+            '⠿';
+    
+        dragControlButton.setAttribute(
+            'aria-label',
+            'Drag calculator'
+        );
+    
+    
+        // Enable dragging only from drag button
+        dragControlButton.addEventListener(
+            'mousedown',
+            () => {
+    
+                controlRow.draggable =
+                    true;
+            }
+        );
+    
+    
+        // Disable dragging when drag finishes
+        controlRow.addEventListener(
+            'dragend',
+            () => {
+    
+                controlRow.draggable =
+                    false;
+    
+                draggedControlRow =
+                    null;
+            }
+        );
     
     
         // Create calculator title
@@ -309,7 +360,6 @@ class Calculator {
     
                 this.minimizeCalculator();
                 saveCalculators();
-    
             }
         );
     
@@ -336,12 +386,15 @@ class Calculator {
     
                 this.removeCalculator();
                 saveCalculators();
-    
             }
         );
     
     
         // Add elements to Control Panel row
+        controlRow.appendChild(
+            dragControlButton
+        );
+    
         controlRow.appendChild(
             controlTitle
         );
@@ -900,67 +953,182 @@ addCalculatorButton.addEventListener(
         saveCalculators();
     }
 );
-//Drag and drop calculator//
+// =========================================
+// DRAG AND DROP
+// =========================================
+
 let draggedCalculator = null;
+let draggedControlRow = null;
+
+
+// Calculator list
 const calculatorList =
     document.querySelector(
         '.calculator-list'
     );
 
-    calculatorList.addEventListener(
-        'dragover',
-        (event) => {
-            event.preventDefault();
-    
-            const elementUnderMouse =
-                document.elementFromPoint(
-                    event.clientX,
-                    event.clientY
-                );
-    
-                const calculatorUnderMouse =
-                  elementUnderMouse.closest(
-                    '.calculator'
-                );
-    
-                if (
-                    calculatorUnderMouse === null ||
-                    calculatorUnderMouse === draggedCalculator
-                ) {
-                    return;
-                }
 
-                const rectangle =
-                calculatorUnderMouse.getBoundingClientRect();
-
-                const middleX =
-                rectangle.left +
-                rectangle.width / 2;
-
-
-                if (event.clientX < middleX) {
-
-                    calculatorList.insertBefore(
-                        draggedCalculator,
-                        calculatorUnderMouse
-                    );
-                } else {
-                    calculatorList.insertBefore(
-                        draggedCalculator,
-                        calculatorUnderMouse.nextSibling
-                    );
-                }
-        }
+// Control Panel list
+const controlList =
+    document.querySelector(
+        '.calculator-control-list'
     );
 
-    calculatorList.addEventListener(
-        'drop',
-        () => {
-    
-            saveCalculators();
-        }
-    );
 
+// =========================================
+// DRAG CALCULATOR CARDS
+// =========================================
+
+calculatorList.addEventListener(
+    'dragover',
+    (event) => {
+
+        event.preventDefault();
+
+        if (draggedCalculator === null) {
+            return;
+        }
+
+        const elementUnderMouse =
+            document.elementFromPoint(
+                event.clientX,
+                event.clientY
+            );
+
+        if (elementUnderMouse === null) {
+            return;
+        }
+
+        const calculatorUnderMouse =
+            elementUnderMouse.closest(
+                '.calculator'
+            );
+
+        if (
+            calculatorUnderMouse === null ||
+            calculatorUnderMouse === draggedCalculator
+        ) {
+            return;
+        }
+
+        const rectangle =
+            calculatorUnderMouse
+                .getBoundingClientRect();
+
+        const middleX =
+            rectangle.left +
+            rectangle.width / 2;
+
+        if (event.clientX < middleX) {
+
+            calculatorList.insertBefore(
+                draggedCalculator,
+                calculatorUnderMouse
+            );
+
+        } else {
+
+            calculatorList.insertBefore(
+                draggedCalculator,
+                calculatorUnderMouse.nextSibling
+            );
+        }
+    }
+);
+
+
+calculatorList.addEventListener(
+    'drop',
+    () => {
+
+        syncControlPanelOrder();
+        saveCalculators();
+    }
+);
+
+
+// =========================================
+// DRAG CONTROL PANEL ROWS
+// =========================================
+
+controlList.addEventListener(
+    'dragstart',
+    (event) => {
+
+        draggedControlRow =
+            event.target.closest(
+                '.calculator-control-row'
+            );
+    }
+);
+
+
+controlList.addEventListener(
+    'dragover',
+    (event) => {
+
+        event.preventDefault();
+
+        if (draggedControlRow === null) {
+            return;
+        }
+
+        const controlRowUnderMouse =
+            event.target.closest(
+                '.calculator-control-row'
+            );
+
+        if (
+            controlRowUnderMouse === null ||
+            controlRowUnderMouse === draggedControlRow
+        ) {
+            return;
+        }
+
+        const rectangle =
+            controlRowUnderMouse
+                .getBoundingClientRect();
+
+        const middleY =
+            rectangle.top +
+            rectangle.height / 2;
+
+        if (event.clientY < middleY) {
+
+            controlList.insertBefore(
+                draggedControlRow,
+                controlRowUnderMouse
+            );
+
+        } else {
+
+            controlList.insertBefore(
+                draggedControlRow,
+                controlRowUnderMouse.nextSibling
+            );
+        }
+    }
+);
+
+
+controlList.addEventListener(
+    'drop',
+    () => {
+
+        syncCalculatorOrder();
+        saveCalculators();
+    }
+);
+
+
+controlList.addEventListener(
+    'dragend',
+    () => {
+
+        draggedControlRow =
+            null;
+    }
+);
 
     //local storage//
     function saveCalculators() {
@@ -1086,4 +1254,66 @@ const calculatorList =
     
     
         saveCalculators();
+    }
+
+    function syncControlPanelOrder() {
+
+        const calculators =
+            document.querySelectorAll(
+                '.calculator-list .calculator'
+            );
+    
+        const controlList =
+            document.querySelector(
+                '.calculator-control-list'
+            );
+    
+        calculators.forEach((calculator) => {
+    
+            const calculatorId =
+                calculator.dataset.calculatorId;
+    
+            const controlRow =
+                controlList.querySelector(
+                    `.calculator-control-row[data-calculator-id="${calculatorId}"]`
+                );
+    
+            if (controlRow !== null) {
+    
+                controlList.appendChild(
+                    controlRow
+                );
+            }
+        });
+    }
+
+    function syncCalculatorOrder() {
+
+        const controlRows =
+            document.querySelectorAll(
+                '.calculator-control-row'
+            );
+    
+        const calculatorList =
+            document.querySelector(
+                '.calculator-list'
+            );
+    
+        controlRows.forEach((controlRow) => {
+    
+            const calculatorId =
+                controlRow.dataset.calculatorId;
+    
+            const calculator =
+                calculatorList.querySelector(
+                    `.calculator[data-calculator-id="${calculatorId}"]`
+                );
+    
+            if (calculator !== null) {
+    
+                calculatorList.appendChild(
+                    calculator
+                );
+            }
+        });
     }
