@@ -1,3 +1,141 @@
+window.DragRaw = function(options) {
+
+    var self = this;
+
+    this.initVars = function() {
+
+        this.options = options;
+    
+        this.container =
+            document.querySelector(
+                options.container
+            );
+    
+        this.itemSelector =
+            options.item;
+    
+        this.handleSelector =
+            options.handle;
+    
+        this.draggedElement = null;
+    };
+
+    this.bindEvents = function() {
+
+        this.container.addEventListener(
+            'mousedown',
+            function(event) {
+    
+                const handle =
+                    event.target.closest(
+                        self.handleSelector
+                    );
+    
+                if (handle === null) {
+                    return;
+                }
+    
+                const item =
+                    handle.closest(
+                        self.itemSelector
+                    );
+    
+                if (item === null) {
+                    return;
+                }
+    
+                self.draggedElement = item;
+    
+                console.log(
+                    'Drag started:',
+                    self.draggedElement
+                );
+            }
+        );
+        document.addEventListener(
+            'mousemove',
+            function(event) {
+        
+                if (self.draggedElement === null) {
+                    return;
+                }
+        
+                const elementUnderMouse =
+                    document.elementFromPoint(
+                        event.clientX,
+                        event.clientY
+                    );
+        
+                if (elementUnderMouse === null) {
+                    return;
+                }
+        
+                const itemUnderMouse =
+                    elementUnderMouse.closest(
+                        self.itemSelector
+                    );
+        
+                if (
+                    itemUnderMouse === null ||
+                    itemUnderMouse === self.draggedElement
+                ) {
+                    return;
+                }
+        
+                const rectangle =
+                    itemUnderMouse.getBoundingClientRect();
+        
+                const middleX =
+                    rectangle.left +
+                    rectangle.width / 2;
+        
+                    if (event.clientX < middleX) {
+
+                        self.container.insertBefore(
+                            self.draggedElement,
+                            itemUnderMouse
+                        );
+                    
+                    } else {
+                    
+                        self.container.insertBefore(
+                            self.draggedElement,
+                            itemUnderMouse.nextSibling
+                        );
+                    }
+            }
+        );
+        document.addEventListener(
+            'mouseup',
+            function() {
+        
+                if (self.draggedElement === null) {
+                    return;
+                }
+        
+                console.log(
+                    'Drag finished:',
+                    self.draggedElement
+                );
+        
+                if (self.onDrop) {
+                    self.onDrop();
+                }
+        
+                self.draggedElement = null;
+            }
+        );
+    };
+
+    this.init = function() {
+
+        this.initVars();
+        this.bindEvents();
+    };
+
+    this.init();
+};
+
 window.CalculatorApp = function(options) {
 
     var self = this;
@@ -153,7 +291,6 @@ window.CalculatorApp = function(options) {
             }
         );
     
-    
         // Expand all calculators
         this.expandAllButton.addEventListener(
             'click',
@@ -176,10 +313,28 @@ window.CalculatorApp = function(options) {
         this.initVars();
         this.loadCalculators();
         this.bindEvents();
+        this.initDrag();
+    };
+
+    this.initDrag = function() {
+
+        this.cardDrag =
+            new window.DragRaw({
+                container: '.calculator-list',
+                item: '.calculator',
+                handle: '.drag-calculator-button',
+    
+                onDrop: function() {
+    
+        syncControlPanelOrder();
+        saveCalculators();
+                }
+            });
     };
 
 
     this.init();
+
 };
 let calculatorCounter = 0;
 
@@ -960,7 +1115,7 @@ class Calculator {
             }
         );
     
-    
+    /*
         // Enable dragging only from drag button
         this.dragButton.addEventListener(
             'mousedown',
@@ -968,9 +1123,9 @@ class Calculator {
     
                 this.container.draggable = true;
             }
-        );
+        );*/
     
-    
+    /*
         // Start dragging calculator
         this.container.addEventListener(
             'dragstart',
@@ -979,9 +1134,9 @@ class Calculator {
                 draggedCalculator =
                     this.container;
             }
-        );
+        );*/
     
-    
+    /*
         // Finish dragging calculator
         this.container.addEventListener(
             'dragend',
@@ -993,7 +1148,7 @@ class Calculator {
     
                 draggedCalculator = null;
             }
-        );
+        );*/
     
     
         // Clear calculator
