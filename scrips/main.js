@@ -195,7 +195,7 @@ window.CalculatorApp = function(options) {
                 options.calculatorTemplate
             );
 
-    
+        this.calculatorCounter = 0;
     };
 
     // =========================================
@@ -208,17 +208,38 @@ window.CalculatorApp = function(options) {
             this.calculatorTemplate.content.querySelector(
                 '.calculator'
             );
-
+    
         const newCalculatorElement =
             calculatorBlueprint.cloneNode(true);
-
+    
         this.calculatorList.appendChild(
             newCalculatorElement
         );
-
+    
+        let calculatorId;
+    
+        if (
+            calculatorData !== null &&
+            calculatorData.id !== undefined
+        ) {
+    
+            calculatorId = calculatorData.id;
+    
+            if (calculatorId > this.calculatorCounter) {
+                this.calculatorCounter = calculatorId;
+            }
+    
+        } else {
+    
+            this.calculatorCounter++;
+            calculatorId = this.calculatorCounter;
+        }
+    
         new Calculator(
             newCalculatorElement,
-            calculatorData
+            calculatorData,
+            calculatorId,
+            this
         );
     };
 
@@ -262,6 +283,69 @@ window.CalculatorApp = function(options) {
         );
     };
 
+    this.saveCalculators = function() {
+
+        const calculatorElements =
+            document.querySelectorAll(
+                '.calculator-list .calculator'
+            );
+
+        const calculatorsData = [];
+
+        calculatorElements.forEach((calculator) => {
+
+            const firstNumber =
+                calculator.querySelector(
+                    '.first-number'
+                ).value;
+
+            const secondNumber =
+                calculator.querySelector(
+                    '.second-number'
+                ).value;
+
+            const selectedOperator =
+                calculator.querySelector(
+                    '.operator-radio:checked'
+                );
+
+            const operator =
+                selectedOperator
+                    ? selectedOperator.value
+                    : null;
+
+            const result =
+                calculator.querySelector(
+                    '.result'
+                ).textContent;
+
+            const minimized =
+                calculator.classList.contains(
+                    'minimized'
+                );
+
+            const id =
+                calculator.dataset.calculatorId;
+
+            calculatorsData.push({
+                id: Number(id),
+                firstNumber: firstNumber,
+                secondNumber: secondNumber,
+                operator: operator,
+                result: result,
+                minimized: minimized
+            });
+        });
+
+        const calculatorsJSON =
+            JSON.stringify(calculatorsData);
+
+        localStorage.setItem(
+            'calculators',
+            calculatorsJSON
+        );
+    };
+
     this.setAllCalculatorsMinimized = function(minimized) {
 
         const calculators =
@@ -276,10 +360,8 @@ window.CalculatorApp = function(options) {
             );
         });
     
-        saveCalculators();
+        self.saveCalculators();
     };
-    
-    
     // =========================================
     // EVENTS
     // =========================================
@@ -291,7 +373,7 @@ window.CalculatorApp = function(options) {
             function() {
     
                 self.createCalculator();
-                saveCalculators();
+                self.saveCalculators();
             }
         );
     
@@ -317,8 +399,6 @@ window.CalculatorApp = function(options) {
             }
         );
     };
-
-
     // =========================================
     // INITIALIZATION
     // =========================================
@@ -329,6 +409,62 @@ window.CalculatorApp = function(options) {
         this.loadCalculators();
         this.bindEvents();
         this.initDrag();
+    };
+
+    // =========================================
+// SYNCHRONIZE ORDER
+// =========================================
+
+    this.syncControlPanelOrder = function() {
+
+        const calculators =
+            this.calculatorList.querySelectorAll(
+                '.calculator'
+            );
+
+        calculators.forEach((calculator) => {
+
+            const calculatorId =
+                calculator.dataset.calculatorId;
+
+            const controlRow =
+                this.controlList.querySelector(
+                    `.calculator-control-row[data-calculator-id="${calculatorId}"]`
+                );
+
+            if (controlRow !== null) {
+
+                this.controlList.appendChild(
+                    controlRow
+                );
+            }
+        });
+    };
+
+    this.syncCalculatorOrder = function() {
+
+        const controlRows =
+            this.controlList.querySelectorAll(
+                '.calculator-control-row'
+            );
+
+        controlRows.forEach((controlRow) => {
+
+            const calculatorId =
+                controlRow.dataset.calculatorId;
+
+            const calculator =
+                this.calculatorList.querySelector(
+                    `.calculator[data-calculator-id="${calculatorId}"]`
+                );
+
+            if (calculator !== null) {
+
+                this.calculatorList.appendChild(
+                    calculator
+                );
+            }
+        });
     };
 
     this.initDrag = function() {
@@ -343,8 +479,8 @@ window.CalculatorApp = function(options) {
     
                 onDrop: function() {
     
-                    syncControlPanelOrder();
-                    saveCalculators();
+                    self.syncControlPanelOrder();
+                    self.saveCalculators();
                 }
             });
     
@@ -359,46 +495,33 @@ window.CalculatorApp = function(options) {
     
                 onDrop: function() {
     
-                    syncCalculatorOrder();
-                    saveCalculators();
+                    self.syncCalculatorOrder();
+                    self.saveCalculators();
                 }
             });
     };
 
-
     this.init();
-
 };
-let calculatorCounter = 0;
+
 
 
 class Calculator {
 
-    constructor(container, calculatorData = null) {
+    constructor(
+        container,
+        calculatorData = null,
+        calculatorId,
+        app
+    ) {
 
         this.container = container;
-
+        this.app = app;
         this.container.calculatorInstance =
             this;
         
-        
-        
-        if (
-            calculatorData !== null &&
-            calculatorData.id !== undefined
-        ) {
-            this.id = calculatorData.id;
-        
-            if (this.id > calculatorCounter) {
-                calculatorCounter = this.id;
-            }
-        
-        } else {
-        
-            calculatorCounter++;
-            this.id = calculatorCounter;
-        }
-        
+        this.id = calculatorId;
+
         this.container.dataset.calculatorId =
             this.id;
         
@@ -728,7 +851,7 @@ class Calculator {
             () => {
     
                 this.minimizeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -754,7 +877,7 @@ class Calculator {
             () => {
     
                 this.removeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -840,7 +963,6 @@ class Calculator {
         });
     }
 
-
     checkEmptyFields() {
 
         if (
@@ -859,7 +981,6 @@ class Calculator {
 
         }
     }
-
 
     isOperationSelected() {
 
@@ -883,7 +1004,6 @@ class Calculator {
         }
     }
 
-
     zeroDivision() {
 
         if (
@@ -902,7 +1022,6 @@ class Calculator {
 
         }
     }
-
 
     calculate() {
 
@@ -978,7 +1097,6 @@ class Calculator {
             this.updateControlPanelResult();
     }
 
-
     clear() {
 
         this.resultField.textContent =
@@ -1008,7 +1126,6 @@ class Calculator {
             }
         }
     }
-
 
     removeCalculator() {
 
@@ -1061,7 +1178,6 @@ class Calculator {
             );
         }
     }
-
 
     setMinimized(minimized) {
 
@@ -1120,7 +1236,6 @@ class Calculator {
         }
     }
     
-    
     minimizeCalculator() {
     
         const isMinimized =
@@ -1132,7 +1247,6 @@ class Calculator {
             !isMinimized
         );
     }
-
     addEventListeners() {
 
    
@@ -1142,7 +1256,7 @@ class Calculator {
             () => {
     
                 this.calculate();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -1152,7 +1266,7 @@ class Calculator {
             () => {
     
                 this.clear();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -1163,7 +1277,7 @@ class Calculator {
             () => {
     
                 this.removeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -1174,140 +1288,13 @@ class Calculator {
             () => {
     
                 this.minimizeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
         
     
     }
 }
-
-    //local storage//
-    function saveCalculators() {
-
-        const calculatorElements =
-            document.querySelectorAll(
-                '.calculator-list .calculator'
-            );
-    
-        const calculatorsData = [];
-    
-        calculatorElements.forEach((calculator) => {
-    
-            const firstNumber =
-                calculator.querySelector(
-                    '.first-number'
-                ).value;
-    
-            const secondNumber =
-                calculator.querySelector(
-                    '.second-number'
-                ).value;
-    
-            const selectedOperator =
-                calculator.querySelector(
-                    '.operator-radio:checked'
-                );
-    
-            const operator =
-                selectedOperator
-                    ? selectedOperator.value
-                    : null;
-    
-            const result =
-                calculator.querySelector(
-                    '.result'
-                ).textContent;
-    
-            const minimized =
-                calculator.classList.contains(
-                    'minimized'
-                );
-               
-                const id = calculator.dataset.calculatorId;
-    
-            calculatorsData.push({
-                id: Number(id),
-                firstNumber: firstNumber,
-                secondNumber: secondNumber,
-                operator: operator,
-                result: result,
-                minimized: minimized
-            });
-        });
-    
-        const calculatorsJSON =
-        JSON.stringify(calculatorsData);
-
-        localStorage.setItem(
-            'calculators',
-            calculatorsJSON
-        );
-
-
-    }
-
-    function syncControlPanelOrder() {
-
-        const calculators =
-            document.querySelectorAll(
-                '.calculator-list .calculator'
-            );
-    
-        const controlList =
-            document.querySelector(
-                '.calculator-control-list'
-            );
-    
-        calculators.forEach((calculator) => {
-    
-            const calculatorId =
-                calculator.dataset.calculatorId;
-    
-            const controlRow =
-                controlList.querySelector(
-                    `.calculator-control-row[data-calculator-id="${calculatorId}"]`
-                );
-    
-            if (controlRow !== null) {
-    
-                controlList.appendChild(
-                    controlRow
-                );
-            }
-        });
-    }
-
-    function syncCalculatorOrder() {
-
-        const controlRows =
-            document.querySelectorAll(
-                '.calculator-control-row'
-            );
-    
-        const calculatorList =
-            document.querySelector(
-                '.calculator-list'
-            );
-    
-        controlRows.forEach((controlRow) => {
-    
-            const calculatorId =
-                controlRow.dataset.calculatorId;
-    
-            const calculator =
-                calculatorList.querySelector(
-                    `.calculator[data-calculator-id="${calculatorId}"]`
-                );
-    
-            if (calculator !== null) {
-    
-                calculatorList.appendChild(
-                    calculator
-                );
-            }
-        });
-    }
 
     window.calculatorApp =
     new window.CalculatorApp({
