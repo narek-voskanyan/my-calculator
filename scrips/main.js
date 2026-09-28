@@ -1,3 +1,186 @@
+window.CalculatorApp = function(options) {
+
+    var self = this;
+
+
+    // =========================================
+    // VARIABLES
+    // =========================================
+
+    this.initVars = function() {
+
+        this.options = options;
+
+        this.calculatorList =
+            document.querySelector(
+                options.calculatorList
+            );
+
+        this.controlList =
+            document.querySelector(
+                options.controlList
+            );
+
+        this.addCalculatorButton =
+            document.querySelector(
+                options.addButton
+            );
+
+        this.collapseAllButton =
+            document.querySelector(
+                options.collapseAllButton
+            );
+
+        this.expandAllButton =
+            document.querySelector(
+                options.expandAllButton
+            );
+
+        this.calculatorTemplate =
+            document.querySelector(
+                options.calculatorTemplate
+            );
+
+        this.draggedCalculator = null;
+        this.draggedControlRow = null;
+    };
+
+    // =========================================
+    // CREATE CALCULATOR
+    // =========================================
+
+    this.createCalculator = function(calculatorData = null) {
+
+        const calculatorBlueprint =
+            this.calculatorTemplate.content.querySelector(
+                '.calculator'
+            );
+
+        const newCalculatorElement =
+            calculatorBlueprint.cloneNode(true);
+
+        this.calculatorList.appendChild(
+            newCalculatorElement
+        );
+
+        new Calculator(
+            newCalculatorElement,
+            calculatorData
+        );
+    };
+
+    // =========================================
+    // LOAD CALCULATORS
+    // =========================================
+
+    this.loadCalculators = function() {
+
+        const calculatorsJSON =
+            localStorage.getItem(
+                'calculators'
+            );
+
+        // First visit: no LocalStorage yet
+        if (calculatorsJSON === null) {
+
+            this.createCalculator();
+            return;
+        }
+
+        const calculatorsData =
+            JSON.parse(
+                calculatorsJSON
+            );
+
+        // Saved empty array means:
+        // user intentionally has 0 calculators
+        if (calculatorsData.length === 0) {
+            return;
+        }
+
+        // Restore saved calculators
+        calculatorsData.forEach(
+            function(calculatorData) {
+
+                self.createCalculator(
+                    calculatorData
+                );
+            }
+        );
+    };
+
+    this.setAllCalculatorsMinimized = function(minimized) {
+
+        const calculators =
+            document.querySelectorAll(
+                '.calculator'
+            );
+    
+        calculators.forEach(function(calculator) {
+    
+            calculator.calculatorInstance.setMinimized(
+                minimized
+            );
+        });
+    
+        saveCalculators();
+    };
+    
+    
+    // =========================================
+    // EVENTS
+    // =========================================
+    this.bindEvents = function() {
+
+        // Add calculator
+        this.addCalculatorButton.addEventListener(
+            'click',
+            function() {
+    
+                self.createCalculator();
+                saveCalculators();
+            }
+        );
+    
+        // Collapse all calculators
+        this.collapseAllButton.addEventListener(
+            'click',
+            function() {
+    
+                self.setAllCalculatorsMinimized(
+                    true
+                );
+            }
+        );
+    
+    
+        // Expand all calculators
+        this.expandAllButton.addEventListener(
+            'click',
+            function() {
+    
+                self.setAllCalculatorsMinimized(
+                    false
+                );
+            }
+        );
+    };
+
+
+    // =========================================
+    // INITIALIZATION
+    // =========================================
+
+    this.init = function() {
+
+        this.initVars();
+        this.loadCalculators();
+        this.bindEvents();
+    };
+
+
+    this.init();
+};
 let calculatorCounter = 0;
 
 
@@ -849,110 +1032,11 @@ class Calculator {
     }
 }
 
-
-/* =========================================
-   CREATE NEW CALCULATOR
-   ========================================= */
-
-   function createCalculator(calculatorData = null) {
-
-    // Find calculator template
-    const calculatorTemplate =
-        document.querySelector(
-            '#calculator-template'
-        );
-
-       
-      
-
-        
-    // Find calculator inside template
-    const calculatorBlueprint =
-        calculatorTemplate.content.querySelector(
-            '.calculator'
-        );
-
-
-    // Create a new calculator from template
-    const newCalculatorElement =
-        calculatorBlueprint.cloneNode(true);
-
-
-    // Add calculator to page
-    const calculatorList =
-        document.querySelector(
-            '.calculator-list'
-        );
-
-    calculatorList.appendChild(
-        newCalculatorElement
-    );
-
-
-    // Give new calculator its own logic
-    new Calculator(
-        newCalculatorElement,
-        calculatorData
-    );
-}
-
-
-/* =========================================
-   START FIRST CALCULATOR
-   ========================================= */
-
-   loadCalculators();
-
-
 /* =========================================
    GLOBAL ADD CALCULATOR BUTTON
    ========================================= */
 
-const addCalculatorButton =
-    document.querySelector(
-        '.add-calculator-button'
-    );
-const collapseAllButton =
-    document.querySelector(
-        '.collapse-all-button'
-    );
 
-const expandAllButton =
-    document.querySelector(
-        '.expand-all-button'
-    );
-
-    // Collapse all calculators 
-    collapseAllButton.addEventListener(
-        'click',
-        () => {
-    
-            setAllCalculatorsMinimized(
-                true
-            );
-        }
-    );
-    
-    // Expand all calculators 
-    expandAllButton.addEventListener(
-        'click',
-        () => {
-    
-            setAllCalculatorsMinimized(
-                false
-            );
-        }
-    ); 
-
-// Add calculator button//
-addCalculatorButton.addEventListener(
-    'click',
-    () => {
-
-        createCalculator();
-        saveCalculators();
-    }
-);
 // =========================================
 // DRAG AND DROP
 // =========================================
@@ -1195,67 +1279,6 @@ controlList.addEventListener(
 
     }
 
-    function loadCalculators() {
-
-        const calculatorsJSON =
-            localStorage.getItem(
-                'calculators'
-            );
-    
-    
-        // First visit: no LocalStorage yet
-        if (calculatorsJSON === null) {
-    
-            createCalculator();
-            return;
-        }
-    
-    
-        const calculatorsData =
-            JSON.parse(
-                calculatorsJSON
-            );
-    
-    
-        // Saved empty array means:
-        // user intentionally has 0 calculators
-        if (calculatorsData.length === 0) {
-            return;
-        }
-    
-    
-        // Restore saved calculators
-        calculatorsData.forEach(
-            (calculatorData) => {
-    
-                createCalculator(
-                    calculatorData
-                );
-    
-            }
-        );
-    }
-
-    function setAllCalculatorsMinimized(minimized) {
-
-        const calculators =
-            document.querySelectorAll(
-                '.calculator'
-            );
-    
-    
-        calculators.forEach((calculator) => {
-    
-            calculator.calculatorInstance.setMinimized(
-                minimized
-            );
-    
-        });
-    
-    
-        saveCalculators();
-    }
-
     function syncControlPanelOrder() {
 
         const calculators =
@@ -1317,3 +1340,25 @@ controlList.addEventListener(
             }
         });
     }
+
+    window.calculatorApp =
+    new window.CalculatorApp({
+
+        calculatorList:
+            '.calculator-list',
+
+        controlList:
+            '.calculator-control-list',
+
+        addButton:
+            '.add-calculator-button',
+
+        collapseAllButton:
+            '.collapse-all-button',
+
+        expandAllButton:
+            '.expand-all-button',
+
+        calculatorTemplate:
+            '#calculator-template'
+    });
