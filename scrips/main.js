@@ -16,6 +16,12 @@ window.DragRaw = function(options) {
     
         this.handleSelector =
             options.handle;
+
+        this.axis =
+            options.axis || 'x';
+    
+        this.onDrop =
+            options.onDrop;
     
         this.draggedElement = null;
     };
@@ -46,10 +52,6 @@ window.DragRaw = function(options) {
     
                 self.draggedElement = item;
     
-                console.log(
-                    'Drag started:',
-                    self.draggedElement
-                );
             }
         );
         document.addEventListener(
@@ -85,12 +87,30 @@ window.DragRaw = function(options) {
                 const rectangle =
                     itemUnderMouse.getBoundingClientRect();
         
-                const middleX =
-                    rectangle.left +
-                    rectangle.width / 2;
-        
-                    if (event.clientX < middleX) {
-
+                    let pointerPosition;
+                    let middlePosition;
+                    
+                    if (self.axis === 'y') {
+                    
+                        pointerPosition =
+                            event.clientY;
+                    
+                        middlePosition =
+                            rectangle.top +
+                            rectangle.height / 2;
+                    
+                    } else {
+                    
+                        pointerPosition =
+                            event.clientX;
+                    
+                        middlePosition =
+                            rectangle.left +
+                            rectangle.width / 2;
+                    }
+                    
+                    if (pointerPosition < middlePosition) {
+                    
                         self.container.insertBefore(
                             self.draggedElement,
                             itemUnderMouse
@@ -112,12 +132,8 @@ window.DragRaw = function(options) {
                 if (self.draggedElement === null) {
                     return;
                 }
-        
-                console.log(
-                    'Drag finished:',
-                    self.draggedElement
-                );
-        
+
+    
                 if (self.onDrop) {
                     self.onDrop();
                 }
@@ -179,8 +195,7 @@ window.CalculatorApp = function(options) {
                 options.calculatorTemplate
             );
 
-        this.draggedCalculator = null;
-        this.draggedControlRow = null;
+    
     };
 
     // =========================================
@@ -318,16 +333,34 @@ window.CalculatorApp = function(options) {
 
     this.initDrag = function() {
 
+        // Calculator cards
         this.cardDrag =
             new window.DragRaw({
                 container: '.calculator-list',
                 item: '.calculator',
                 handle: '.drag-calculator-button',
+                axis: 'x',
     
                 onDrop: function() {
     
-        syncControlPanelOrder();
-        saveCalculators();
+                    syncControlPanelOrder();
+                    saveCalculators();
+                }
+            });
+    
+    
+        // Control Panel rows
+        this.panelDrag =
+            new window.DragRaw({
+                container: '.calculator-control-list',
+                item: '.calculator-control-row',
+                handle: '.calculator-control-drag',
+                axis: 'y',
+    
+                onDrop: function() {
+    
+                    syncCalculatorOrder();
+                    saveCalculators();
                 }
             });
     };
@@ -348,7 +381,7 @@ class Calculator {
         this.container.calculatorInstance =
             this;
         
-        this.container.draggable = false;
+        
         
         if (
             calculatorData !== null &&
@@ -592,9 +625,7 @@ class Calculator {
             this.id;
     
     
-        // Row is NOT draggable by default
-        controlRow.draggable =
-            false;
+
     
     
         // Create drag button
@@ -616,7 +647,7 @@ class Calculator {
             'Drag calculator'
         );
     
-    
+    /*
         // Enable dragging only from drag button
         dragControlButton.addEventListener(
             'mousedown',
@@ -625,9 +656,9 @@ class Calculator {
                 controlRow.draggable =
                     true;
             }
-        );
+        );*/
     
-    
+    /*
         // Disable dragging when drag finishes
         controlRow.addEventListener(
             'dragend',
@@ -639,7 +670,7 @@ class Calculator {
                 draggedControlRow =
                     null;
             }
-        );
+        );*/
     
     
         // Create calculator title
@@ -1115,42 +1146,6 @@ class Calculator {
             }
         );
     
-    /*
-        // Enable dragging only from drag button
-        this.dragButton.addEventListener(
-            'mousedown',
-            () => {
-    
-                this.container.draggable = true;
-            }
-        );*/
-    
-    /*
-        // Start dragging calculator
-        this.container.addEventListener(
-            'dragstart',
-            () => {
-    
-                draggedCalculator =
-                    this.container;
-            }
-        );*/
-    
-    /*
-        // Finish dragging calculator
-        this.container.addEventListener(
-            'dragend',
-            () => {
-    
-                this.container.draggable = false;
-    
-                saveCalculators();
-    
-                draggedCalculator = null;
-            }
-        );*/
-    
-    
         // Clear calculator
         this.clearButton.addEventListener(
             'click',
@@ -1186,188 +1181,6 @@ class Calculator {
     
     }
 }
-
-/* =========================================
-   GLOBAL ADD CALCULATOR BUTTON
-   ========================================= */
-
-
-// =========================================
-// DRAG AND DROP
-// =========================================
-
-let draggedCalculator = null;
-let draggedControlRow = null;
-
-
-// Calculator list
-const calculatorList =
-    document.querySelector(
-        '.calculator-list'
-    );
-
-
-// Control Panel list
-const controlList =
-    document.querySelector(
-        '.calculator-control-list'
-    );
-
-
-// =========================================
-// DRAG CALCULATOR CARDS
-// =========================================
-
-calculatorList.addEventListener(
-    'dragover',
-    (event) => {
-
-        event.preventDefault();
-
-        if (draggedCalculator === null) {
-            return;
-        }
-
-        const elementUnderMouse =
-            document.elementFromPoint(
-                event.clientX,
-                event.clientY
-            );
-
-        if (elementUnderMouse === null) {
-            return;
-        }
-
-        const calculatorUnderMouse =
-            elementUnderMouse.closest(
-                '.calculator'
-            );
-
-        if (
-            calculatorUnderMouse === null ||
-            calculatorUnderMouse === draggedCalculator
-        ) {
-            return;
-        }
-
-        const rectangle =
-            calculatorUnderMouse
-                .getBoundingClientRect();
-
-        const middleX =
-            rectangle.left +
-            rectangle.width / 2;
-
-        if (event.clientX < middleX) {
-
-            calculatorList.insertBefore(
-                draggedCalculator,
-                calculatorUnderMouse
-            );
-
-        } else {
-
-            calculatorList.insertBefore(
-                draggedCalculator,
-                calculatorUnderMouse.nextSibling
-            );
-        }
-    }
-);
-
-
-calculatorList.addEventListener(
-    'drop',
-    () => {
-
-        syncControlPanelOrder();
-        saveCalculators();
-    }
-);
-
-
-// =========================================
-// DRAG CONTROL PANEL ROWS
-// =========================================
-
-controlList.addEventListener(
-    'dragstart',
-    (event) => {
-
-        draggedControlRow =
-            event.target.closest(
-                '.calculator-control-row'
-            );
-    }
-);
-
-
-controlList.addEventListener(
-    'dragover',
-    (event) => {
-
-        event.preventDefault();
-
-        if (draggedControlRow === null) {
-            return;
-        }
-
-        const controlRowUnderMouse =
-            event.target.closest(
-                '.calculator-control-row'
-            );
-
-        if (
-            controlRowUnderMouse === null ||
-            controlRowUnderMouse === draggedControlRow
-        ) {
-            return;
-        }
-
-        const rectangle =
-            controlRowUnderMouse
-                .getBoundingClientRect();
-
-        const middleY =
-            rectangle.top +
-            rectangle.height / 2;
-
-        if (event.clientY < middleY) {
-
-            controlList.insertBefore(
-                draggedControlRow,
-                controlRowUnderMouse
-            );
-
-        } else {
-
-            controlList.insertBefore(
-                draggedControlRow,
-                controlRowUnderMouse.nextSibling
-            );
-        }
-    }
-);
-
-
-controlList.addEventListener(
-    'drop',
-    () => {
-
-        syncCalculatorOrder();
-        saveCalculators();
-    }
-);
-
-
-controlList.addEventListener(
-    'dragend',
-    () => {
-
-        draggedControlRow =
-            null;
-    }
-);
 
     //local storage//
     function saveCalculators() {
