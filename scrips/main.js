@@ -1,32 +1,516 @@
-let calculatorCounter = 0;
+window.CalculatorApp = function(options) {
+
+    var self = this;
+
+    // =========================================
+    // VARIABLES
+    // =========================================
+
+    this.initVars = function() {
+
+        this.options = options;
+
+        this.calculatorList =
+            document.querySelector(
+                options.calculatorList
+            );
+
+        this.controlList =
+            document.querySelector(
+                options.controlList
+            );
+
+        this.addCalculatorButton =
+            document.querySelector(
+                options.addButton
+            );
+
+        this.collapseAllButton =
+            document.querySelector(
+                options.collapseAllButton
+            );
+
+        this.expandAllButton =
+            document.querySelector(
+                options.expandAllButton
+            );
+
+        this.calculatorTemplate =
+            document.querySelector(
+                options.calculatorTemplate
+            );
+
+        this.calculatorCounter = 0;
+
+        this.draggedCalculator = null;
+        this.draggedControlRow = null;
+    };
 
 
-class Calculator {
+    // =========================================
+    // CREATE CALCULATOR
+    // =========================================
 
-    constructor(container, calculatorData = null) {
+    this.createCalculator = function(calculatorData = null) {
 
-        this.container = container;
+        const calculatorBlueprint =
+            this.calculatorTemplate.content.querySelector(
+                '.calculator'
+            );
 
-        this.container.calculatorInstance =
-            this;
-        
-        this.container.draggable = false;
-        
+        const newCalculatorElement =
+            calculatorBlueprint.cloneNode(true);
+
+        this.calculatorList.appendChild(
+            newCalculatorElement
+        );
+
+        let calculatorId;
+
         if (
             calculatorData !== null &&
             calculatorData.id !== undefined
         ) {
-            this.id = calculatorData.id;
-        
-            if (this.id > calculatorCounter) {
-                calculatorCounter = this.id;
+
+            calculatorId = calculatorData.id;
+
+            if (calculatorId > this.calculatorCounter) {
+                this.calculatorCounter = calculatorId;
             }
-        
+
         } else {
-        
-            calculatorCounter++;
-            this.id = calculatorCounter;
+
+            this.calculatorCounter++;
+            calculatorId = this.calculatorCounter;
         }
+
+        new Calculator(
+            newCalculatorElement,
+            calculatorData,
+            calculatorId,
+            this
+        );
+    };
+
+
+    // =========================================
+    // LOAD CALCULATORS
+    // =========================================
+
+    this.loadCalculators = function() {
+
+        const calculatorsJSON =
+            localStorage.getItem(
+                'calculators'
+            );
+
+        if (calculatorsJSON === null) {
+
+            this.createCalculator();
+            return;
+        }
+
+        const calculatorsData =
+            JSON.parse(
+                calculatorsJSON
+            );
+
+        if (calculatorsData.length === 0) {
+            return;
+        }
+
+        calculatorsData.forEach(
+            function(calculatorData) {
+
+                self.createCalculator(
+                    calculatorData
+                );
+            }
+        );
+    };
+
+
+    // =========================================
+    // SAVE CALCULATORS
+    // =========================================
+
+    this.saveCalculators = function() {
+
+        const calculatorElements =
+            this.calculatorList.querySelectorAll(
+                '.calculator'
+            );
+
+        const calculatorsData = [];
+
+        calculatorElements.forEach((calculator) => {
+
+            const firstNumber =
+                calculator.querySelector(
+                    '.first-number'
+                ).value;
+
+            const secondNumber =
+                calculator.querySelector(
+                    '.second-number'
+                ).value;
+
+            const selectedOperator =
+                calculator.querySelector(
+                    '.operator-radio:checked'
+                );
+
+            const operator =
+                selectedOperator
+                    ? selectedOperator.value
+                    : null;
+
+            const result =
+                calculator.querySelector(
+                    '.result'
+                ).textContent;
+
+            const minimized =
+                calculator.classList.contains(
+                    'minimized'
+                );
+
+            const id =
+                calculator.dataset.calculatorId;
+
+            calculatorsData.push({
+                id: Number(id),
+                firstNumber: firstNumber,
+                secondNumber: secondNumber,
+                operator: operator,
+                result: result,
+                minimized: minimized
+            });
+        });
+
+        const calculatorsJSON =
+            JSON.stringify(
+                calculatorsData
+            );
+
+        localStorage.setItem(
+            'calculators',
+            calculatorsJSON
+        );
+    };
+
+
+    // =========================================
+    // MINIMIZE ALL
+    // =========================================
+
+    this.setAllCalculatorsMinimized = function(minimized) {
+
+        const calculators =
+            this.calculatorList.querySelectorAll(
+                '.calculator'
+            );
+
+        calculators.forEach(function(calculator) {
+
+            calculator.calculatorInstance.setMinimized(
+                minimized
+            );
+        });
+
+        this.saveCalculators();
+    };
+
+
+    // =========================================
+    // SYNCHRONIZE ORDER
+    // =========================================
+
+    this.syncControlPanelOrder = function() {
+
+        const calculators =
+            this.calculatorList.querySelectorAll(
+                '.calculator'
+            );
+
+        calculators.forEach((calculator) => {
+
+            const calculatorId =
+                calculator.dataset.calculatorId;
+
+            const controlRow =
+                this.controlList.querySelector(
+                    `.calculator-control-row[data-calculator-id="${calculatorId}"]`
+                );
+
+            if (controlRow !== null) {
+
+                this.controlList.appendChild(
+                    controlRow
+                );
+            }
+        });
+    };
+
+
+    this.syncCalculatorOrder = function() {
+
+        const controlRows =
+            this.controlList.querySelectorAll(
+                '.calculator-control-row'
+            );
+
+        controlRows.forEach((controlRow) => {
+
+            const calculatorId =
+                controlRow.dataset.calculatorId;
+
+            const calculator =
+                this.calculatorList.querySelector(
+                    `.calculator[data-calculator-id="${calculatorId}"]`
+                );
+
+            if (calculator !== null) {
+
+                this.calculatorList.appendChild(
+                    calculator
+                );
+            }
+        });
+    };
+
+
+    // =========================================
+    // BROWSER DRAG AND DROP API
+    // =========================================
+
+    this.initDrag = function() {
+
+        // Calculator cards
+        this.calculatorList.addEventListener(
+            'dragover',
+            function(event) {
+
+                event.preventDefault();
+
+                if (self.draggedCalculator === null) {
+                    return;
+                }
+
+                const elementUnderMouse =
+                    document.elementFromPoint(
+                        event.clientX,
+                        event.clientY
+                    );
+
+                if (elementUnderMouse === null) {
+                    return;
+                }
+
+                const calculatorUnderMouse =
+                    elementUnderMouse.closest(
+                        '.calculator'
+                    );
+
+                if (
+                    calculatorUnderMouse === null ||
+                    calculatorUnderMouse === self.draggedCalculator
+                ) {
+                    return;
+                }
+
+                const rectangle =
+                    calculatorUnderMouse
+                        .getBoundingClientRect();
+
+                const middleX =
+                    rectangle.left +
+                    rectangle.width / 2;
+
+                if (event.clientX < middleX) {
+
+                    self.calculatorList.insertBefore(
+                        self.draggedCalculator,
+                        calculatorUnderMouse
+                    );
+
+                } else {
+
+                    self.calculatorList.insertBefore(
+                        self.draggedCalculator,
+                        calculatorUnderMouse.nextSibling
+                    );
+                }
+            }
+        );
+
+
+        this.calculatorList.addEventListener(
+            'drop',
+            function() {
+
+                self.syncControlPanelOrder();
+                self.saveCalculators();
+            }
+        );
+
+
+        // Control Panel
+        this.controlList.addEventListener(
+            'dragstart',
+            function(event) {
+
+                self.draggedControlRow =
+                    event.target.closest(
+                        '.calculator-control-row'
+                    );
+            }
+        );
+
+
+        this.controlList.addEventListener(
+            'dragover',
+            function(event) {
+
+                event.preventDefault();
+
+                if (self.draggedControlRow === null) {
+                    return;
+                }
+
+                const controlRowUnderMouse =
+                    event.target.closest(
+                        '.calculator-control-row'
+                    );
+
+                if (
+                    controlRowUnderMouse === null ||
+                    controlRowUnderMouse === self.draggedControlRow
+                ) {
+                    return;
+                }
+
+                const rectangle =
+                    controlRowUnderMouse
+                        .getBoundingClientRect();
+
+                const middleY =
+                    rectangle.top +
+                    rectangle.height / 2;
+
+                if (event.clientY < middleY) {
+
+                    self.controlList.insertBefore(
+                        self.draggedControlRow,
+                        controlRowUnderMouse
+                    );
+
+                } else {
+
+                    self.controlList.insertBefore(
+                        self.draggedControlRow,
+                        controlRowUnderMouse.nextSibling
+                    );
+                }
+            }
+        );
+
+
+        this.controlList.addEventListener(
+            'drop',
+            function() {
+
+                self.syncCalculatorOrder();
+                self.saveCalculators();
+            }
+        );
+
+
+        this.controlList.addEventListener(
+            'dragend',
+            function() {
+
+                self.draggedControlRow = null;
+            }
+        );
+    };
+
+
+    // =========================================
+    // GLOBAL BUTTON EVENTS
+    // =========================================
+
+    this.bindEvents = function() {
+
+        this.addCalculatorButton.addEventListener(
+            'click',
+            function() {
+
+                self.createCalculator();
+                self.saveCalculators();
+            }
+        );
+
+
+        this.collapseAllButton.addEventListener(
+            'click',
+            function() {
+
+                self.setAllCalculatorsMinimized(
+                    true
+                );
+            }
+        );
+
+
+        this.expandAllButton.addEventListener(
+            'click',
+            function() {
+
+                self.setAllCalculatorsMinimized(
+                    false
+                );
+            }
+        );
+    };
+
+
+    // =========================================
+    // INITIALIZATION
+    // =========================================
+
+    this.init = function() {
+
+        this.initVars();
+        this.loadCalculators();
+        this.bindEvents();
+        this.initDrag();
+    };
+
+
+    this.init();
+};
+
+
+class Calculator {
+
+    constructor(
+        container,
+        calculatorData = null,
+        calculatorId,
+        app
+    ) {
+    
+        this.container = container;
+        this.app = app;
+    
+        this.container.calculatorInstance =
+            this;
+    
+        this.id = calculatorId;
+
+    
+        this.container.draggable = false;
         
         this.container.dataset.calculatorId =
             this.id;
@@ -294,11 +778,11 @@ class Calculator {
         controlRow.addEventListener(
             'dragend',
             () => {
-    
+        
                 controlRow.draggable =
                     false;
-    
-                draggedControlRow =
+        
+                this.app.draggedControlRow =
                     null;
             }
         );
@@ -359,7 +843,7 @@ class Calculator {
             () => {
     
                 this.minimizeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -385,7 +869,7 @@ class Calculator {
             () => {
     
                 this.removeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -766,14 +1250,13 @@ class Calculator {
 
     addEventListeners() {
 
-   
         // Calculate
         this.calculateButton.addEventListener(
             'click',
             () => {
     
                 this.calculate();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -793,7 +1276,7 @@ class Calculator {
             'dragstart',
             () => {
     
-                draggedCalculator =
+                this.app.draggedCalculator =
                     this.container;
             }
         );
@@ -806,9 +1289,9 @@ class Calculator {
     
                 this.container.draggable = false;
     
-                saveCalculators();
+                this.app.saveCalculators();
     
-                draggedCalculator = null;
+                this.app.draggedCalculator = null;
             }
         );
     
@@ -819,7 +1302,7 @@ class Calculator {
             () => {
     
                 this.clear();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -830,7 +1313,7 @@ class Calculator {
             () => {
     
                 this.removeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
     
@@ -841,479 +1324,21 @@ class Calculator {
             () => {
     
                 this.minimizeCalculator();
-                saveCalculators();
+                this.app.saveCalculators();
             }
         );
-        
-    
     }
 }
 
-
-/* =========================================
-   CREATE NEW CALCULATOR
-   ========================================= */
-
-   function createCalculator(calculatorData = null) {
-
-    // Find calculator template
-    const calculatorTemplate =
-        document.querySelector(
-            '#calculator-template'
-        );
-
-       
-      
-
-        
-    // Find calculator inside template
-    const calculatorBlueprint =
-        calculatorTemplate.content.querySelector(
-            '.calculator'
-        );
-
-
-    // Create a new calculator from template
-    const newCalculatorElement =
-        calculatorBlueprint.cloneNode(true);
-
-
-    // Add calculator to page
-    const calculatorList =
-        document.querySelector(
-            '.calculator-list'
-        );
-
-    calculatorList.appendChild(
-        newCalculatorElement
-    );
-
-
-    // Give new calculator its own logic
-    new Calculator(
-        newCalculatorElement,
-        calculatorData
-    );
-}
-
-
-/* =========================================
-   START FIRST CALCULATOR
-   ========================================= */
-
-   loadCalculators();
-
-
-/* =========================================
-   GLOBAL ADD CALCULATOR BUTTON
-   ========================================= */
-
-const addCalculatorButton =
-    document.querySelector(
-        '.add-calculator-button'
-    );
-const collapseAllButton =
-    document.querySelector(
-        '.collapse-all-button'
-    );
-
-const expandAllButton =
-    document.querySelector(
-        '.expand-all-button'
-    );
-
-    // Collapse all calculators 
-    collapseAllButton.addEventListener(
-        'click',
-        () => {
-    
-            setAllCalculatorsMinimized(
-                true
-            );
-        }
-    );
-    
-    // Expand all calculators 
-    expandAllButton.addEventListener(
-        'click',
-        () => {
-    
-            setAllCalculatorsMinimized(
-                false
-            );
-        }
-    ); 
-
-// Add calculator button//
-addCalculatorButton.addEventListener(
-    'click',
-    () => {
-
-        createCalculator();
-        saveCalculators();
-    }
-);
 // =========================================
-// DRAG AND DROP
+// START APPLICATION
 // =========================================
 
-let draggedCalculator = null;
-let draggedControlRow = null;
-
-
-// Calculator list
-const calculatorList =
-    document.querySelector(
-        '.calculator-list'
-    );
-
-
-// Control Panel list
-const controlList =
-    document.querySelector(
-        '.calculator-control-list'
-    );
-
-
-// =========================================
-// DRAG CALCULATOR CARDS
-// =========================================
-
-calculatorList.addEventListener(
-    'dragover',
-    (event) => {
-
-        event.preventDefault();
-
-        if (draggedCalculator === null) {
-            return;
-        }
-
-        const elementUnderMouse =
-            document.elementFromPoint(
-                event.clientX,
-                event.clientY
-            );
-
-        if (elementUnderMouse === null) {
-            return;
-        }
-
-        const calculatorUnderMouse =
-            elementUnderMouse.closest(
-                '.calculator'
-            );
-
-        if (
-            calculatorUnderMouse === null ||
-            calculatorUnderMouse === draggedCalculator
-        ) {
-            return;
-        }
-
-        const rectangle =
-            calculatorUnderMouse
-                .getBoundingClientRect();
-
-        const middleX =
-            rectangle.left +
-            rectangle.width / 2;
-
-        if (event.clientX < middleX) {
-
-            calculatorList.insertBefore(
-                draggedCalculator,
-                calculatorUnderMouse
-            );
-
-        } else {
-
-            calculatorList.insertBefore(
-                draggedCalculator,
-                calculatorUnderMouse.nextSibling
-            );
-        }
-    }
-);
-
-
-calculatorList.addEventListener(
-    'drop',
-    () => {
-
-        syncControlPanelOrder();
-        saveCalculators();
-    }
-);
-
-
-// =========================================
-// DRAG CONTROL PANEL ROWS
-// =========================================
-
-controlList.addEventListener(
-    'dragstart',
-    (event) => {
-
-        draggedControlRow =
-            event.target.closest(
-                '.calculator-control-row'
-            );
-    }
-);
-
-
-controlList.addEventListener(
-    'dragover',
-    (event) => {
-
-        event.preventDefault();
-
-        if (draggedControlRow === null) {
-            return;
-        }
-
-        const controlRowUnderMouse =
-            event.target.closest(
-                '.calculator-control-row'
-            );
-
-        if (
-            controlRowUnderMouse === null ||
-            controlRowUnderMouse === draggedControlRow
-        ) {
-            return;
-        }
-
-        const rectangle =
-            controlRowUnderMouse
-                .getBoundingClientRect();
-
-        const middleY =
-            rectangle.top +
-            rectangle.height / 2;
-
-        if (event.clientY < middleY) {
-
-            controlList.insertBefore(
-                draggedControlRow,
-                controlRowUnderMouse
-            );
-
-        } else {
-
-            controlList.insertBefore(
-                draggedControlRow,
-                controlRowUnderMouse.nextSibling
-            );
-        }
-    }
-);
-
-
-controlList.addEventListener(
-    'drop',
-    () => {
-
-        syncCalculatorOrder();
-        saveCalculators();
-    }
-);
-
-
-controlList.addEventListener(
-    'dragend',
-    () => {
-
-        draggedControlRow =
-            null;
-    }
-);
-
-    //local storage//
-    function saveCalculators() {
-
-        const calculatorElements =
-            document.querySelectorAll(
-                '.calculator-list .calculator'
-            );
-    
-        const calculatorsData = [];
-    
-        calculatorElements.forEach((calculator) => {
-    
-            const firstNumber =
-                calculator.querySelector(
-                    '.first-number'
-                ).value;
-    
-            const secondNumber =
-                calculator.querySelector(
-                    '.second-number'
-                ).value;
-    
-            const selectedOperator =
-                calculator.querySelector(
-                    '.operator-radio:checked'
-                );
-    
-            const operator =
-                selectedOperator
-                    ? selectedOperator.value
-                    : null;
-    
-            const result =
-                calculator.querySelector(
-                    '.result'
-                ).textContent;
-    
-            const minimized =
-                calculator.classList.contains(
-                    'minimized'
-                );
-               
-                const id = calculator.dataset.calculatorId;
-    
-            calculatorsData.push({
-                id: Number(id),
-                firstNumber: firstNumber,
-                secondNumber: secondNumber,
-                operator: operator,
-                result: result,
-                minimized: minimized
-            });
-        });
-    
-        const calculatorsJSON =
-        JSON.stringify(calculatorsData);
-
-        localStorage.setItem(
-            'calculators',
-            calculatorsJSON
-        );
-
-
-    }
-
-    function loadCalculators() {
-
-        const calculatorsJSON =
-            localStorage.getItem(
-                'calculators'
-            );
-    
-    
-        // First visit: no LocalStorage yet
-        if (calculatorsJSON === null) {
-    
-            createCalculator();
-            return;
-        }
-    
-    
-        const calculatorsData =
-            JSON.parse(
-                calculatorsJSON
-            );
-    
-    
-        // Saved empty array means:
-        // user intentionally has 0 calculators
-        if (calculatorsData.length === 0) {
-            return;
-        }
-    
-    
-        // Restore saved calculators
-        calculatorsData.forEach(
-            (calculatorData) => {
-    
-                createCalculator(
-                    calculatorData
-                );
-    
-            }
-        );
-    }
-
-    function setAllCalculatorsMinimized(minimized) {
-
-        const calculators =
-            document.querySelectorAll(
-                '.calculator'
-            );
-    
-    
-        calculators.forEach((calculator) => {
-    
-            calculator.calculatorInstance.setMinimized(
-                minimized
-            );
-    
-        });
-    
-    
-        saveCalculators();
-    }
-
-    function syncControlPanelOrder() {
-
-        const calculators =
-            document.querySelectorAll(
-                '.calculator-list .calculator'
-            );
-    
-        const controlList =
-            document.querySelector(
-                '.calculator-control-list'
-            );
-    
-        calculators.forEach((calculator) => {
-    
-            const calculatorId =
-                calculator.dataset.calculatorId;
-    
-            const controlRow =
-                controlList.querySelector(
-                    `.calculator-control-row[data-calculator-id="${calculatorId}"]`
-                );
-    
-            if (controlRow !== null) {
-    
-                controlList.appendChild(
-                    controlRow
-                );
-            }
-        });
-    }
-
-    function syncCalculatorOrder() {
-
-        const controlRows =
-            document.querySelectorAll(
-                '.calculator-control-row'
-            );
-    
-        const calculatorList =
-            document.querySelector(
-                '.calculator-list'
-            );
-    
-        controlRows.forEach((controlRow) => {
-    
-            const calculatorId =
-                controlRow.dataset.calculatorId;
-    
-            const calculator =
-                calculatorList.querySelector(
-                    `.calculator[data-calculator-id="${calculatorId}"]`
-                );
-    
-            if (calculator !== null) {
-    
-                calculatorList.appendChild(
-                    calculator
-                );
-            }
-        });
-    }
+new window.CalculatorApp({
+    calculatorList: '.calculator-list',
+    controlList: '.calculator-control-list',
+    addButton: '.add-calculator-button',
+    collapseAllButton: '.collapse-all-button',
+    expandAllButton: '.expand-all-button',
+    calculatorTemplate: '#calculator-template'
+});
