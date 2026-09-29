@@ -119,7 +119,6 @@ window.CalculatorApp = function(options) {
 
     this.removeCalculator = function(calculatorId) {
 
-        // Change data first
         this.calculators =
             this.calculators.filter(
                 function(calculatorData) {
@@ -129,7 +128,6 @@ window.CalculatorApp = function(options) {
             );
 
 
-        // Update calculator interface
         const calculator =
             this.calculatorList.querySelector(
                 `.calculator[data-calculator-id="${calculatorId}"]`
@@ -141,7 +139,6 @@ window.CalculatorApp = function(options) {
         }
 
 
-        // Update Control Panel interface
         const controlRow =
             this.controlList.querySelector(
                 `.calculator-control-row[data-calculator-id="${calculatorId}"]`
@@ -172,13 +169,48 @@ window.CalculatorApp = function(options) {
         }
 
 
-        // Save changed data
         this.saveCalculators();
     };
+
+
+    // =========================================
+    // TOGGLE CALCULATOR
+    // =========================================
+
+    this.toggleCalculator = function(calculatorId) {
+        const calculatorData =
+            this.calculators.find(
+                function(data) {
+                    return data.id === calculatorId;
+                }
+            );
+
+        if (calculatorData === undefined) {
+            return;
+        }
+
+        // Change the shared state first
+        calculatorData.minimized =
+            !calculatorData.minimized;
+
+        // Update both views from the same state
+        const calculator =
+            this.calculatorList.querySelector(
+                `.calculator[data-calculator-id="${calculatorId}"]`
+            );
+
+        if (calculator !== null) {
+            calculator.calculatorInstance.setMinimized(
+                calculatorData.minimized
+            );
+        }
+
+        this.saveCalculators();
+    };
+
     // =========================================
     // NORMALIZE CALCULATOR DATA
     // =========================================
-
     this.normalizeCalculatorData = function(calculatorData) {
 
         let idNumber;
@@ -278,55 +310,94 @@ window.CalculatorApp = function(options) {
     // =========================================
 
     this.loadCalculators = function() {
-
-        const calculatorsJSON =
-            localStorage.getItem(
-                'calculators'
+        let calculatorsJSON;
+    
+        try {
+            calculatorsJSON =
+                localStorage.getItem(
+                    'calculators'
+                );
+        } catch (error) {
+            console.error(
+                'Failed to read calculators from localStorage:',
+                error
             );
-
-
+    
+            this.createCalculator();
+            return;
+        }
+    
+        // First visit: no saved data yet
         if (calculatorsJSON === null) {
-
             this.createCalculator();
             this.saveCalculators();
-
             return;
         }
-
-
-        const calculatorsData =
-            JSON.parse(
-                calculatorsJSON
+    
+        let calculatorsData;
+    
+        try {
+            calculatorsData =
+                JSON.parse(
+                    calculatorsJSON
+                );
+        } catch (error) {
+            console.error(
+                'Failed to parse saved calculators:',
+                error
             );
-
-
+    
+            this.createCalculator();
+            this.saveCalculators();
+            return;
+        }
+    
+        // Saved data must be an array
+        if (!Array.isArray(calculatorsData)) {
+            console.error(
+                'Saved calculators data is not an array.'
+            );
+    
+            this.createCalculator();
+            this.saveCalculators();
+            return;
+        }
+    
+        // An empty array is valid.
+        // It means the user removed all calculators.
+        if (calculatorsData.length === 0) {
+            this.calculators = [];
+            return;
+        }
+    
         this.calculators =
-            calculatorsData.map(
-                function(calculatorData) {
-
-                    return self.normalizeCalculatorData(
-                        calculatorData
-                    );
-                }
-            );
-
-
-        if (this.calculators.length === 0) {
-            return;
-        }
-
-
+            calculatorsData
+                .filter(
+                    function(calculatorData) {
+                        return (
+                            calculatorData !== null &&
+                            typeof calculatorData === 'object' &&
+                            !Array.isArray(calculatorData)
+                        );
+                    }
+                )
+                .map(
+                    function(calculatorData) {
+                        return self.normalizeCalculatorData(
+                            calculatorData
+                        );
+                    }
+                );
+    
         this.calculators.forEach(
             function(calculatorData) {
-
                 self.createCalculator(
                     calculatorData
                 );
             }
         );
-
-
-        // Save migrated data in the new format
+    
+        // Save normalized data
         this.saveCalculators();
     };
 
@@ -335,16 +406,23 @@ window.CalculatorApp = function(options) {
     // =========================================
 
     this.saveCalculators = function() {
-
-        const calculatorsJSON =
-            JSON.stringify(
-                this.calculators
+        try {
+            const calculatorsJSON =
+                JSON.stringify(
+                    this.calculators
+                );
+    
+            localStorage.setItem(
+                'calculators',
+                calculatorsJSON
             );
     
-        localStorage.setItem(
-            'calculators',
-            calculatorsJSON
-        );
+        } catch (error) {
+            console.error(
+                'Failed to save calculators to localStorage:',
+                error
+            );
+        }
     };
 
 
@@ -406,63 +484,45 @@ window.CalculatorApp = function(options) {
                 );
     };
 
-// =========================================
-// SYNCHRONIZE ORDER
-// =========================================
+    // =========================================
+    // UPDATE ORDER FROM CALCULATOR LIST
+    // =========================================
 
+    this.updateOrderFromCalculatorList = function() {
+        const calculators =
+            this.calculatorList.querySelectorAll(
+                '.calculator'
+            );
 
-// =========================================
-// UPDATE ORDER FROM CALCULATOR LIST
-// =========================================
+        const orderedIds =
+            Array.from(calculators).map(
+                function(calculator) {
+                    return calculator.dataset.calculatorId;
+                }
+            );
 
-this.updateOrderFromCalculatorList = function() {
-
-    const calculators =
-        this.calculatorList.querySelectorAll(
-            '.calculator'
+        this.updateCalculatorsOrder(
+            orderedIds
         );
+    };
 
+    this.updateOrderFromControlList = function() {
+        const controlRows =
+            this.controlList.querySelectorAll(
+                '.calculator-control-row'
+            );
 
-    const orderedIds =
-        Array.from(calculators).map(
-            function(calculator) {
+        const orderedIds =
+            Array.from(controlRows).map(
+                function(controlRow) {
+                    return controlRow.dataset.calculatorId;
+                }
+            );
 
-                return calculator.dataset.calculatorId;
-            }
+        this.updateCalculatorsOrder(
+            orderedIds
         );
-
-
-    this.updateCalculatorsOrder(
-        orderedIds
-    );
-};
-
-
-// =========================================
-// UPDATE ORDER FROM CONTROL LIST
-// =========================================
-
-this.updateOrderFromControlList = function() {
-
-    const controlRows =
-        this.controlList.querySelectorAll(
-            '.calculator-control-row'
-        );
-
-
-    const orderedIds =
-        Array.from(controlRows).map(
-            function(controlRow) {
-
-                return controlRow.dataset.calculatorId;
-            }
-        );
-
-
-    this.updateCalculatorsOrder(
-        orderedIds
-    );
-};
+    };
 
     this.syncControlPanelOrder = function() {
 
@@ -740,60 +800,50 @@ class Calculator {
         calculatorData,
         app
     ) {
-    
         this.container = container;
         this.app = app;
         this.data = calculatorData;
 
         this.container.calculatorInstance =
             this;
-    
+
         this.id = this.data.id;
 
-    
         this.container.draggable = false;
-        
+
         this.container.dataset.calculatorId =
             this.id;
-        
-        // Minimized result//
+
+        // Minimized result
         this.minimizedResult =
             container.querySelector(
                 '.calculator-minimized-result'
             );
 
-        // Minimize button//
-        this.minimizeButton =
+        // Drag button
+        this.dragButton =
             container.querySelector(
-                '.minimize-calculator-button'
+                '.drag-calculator-button'
             );
 
-            // Drag button//
-            this.dragButton =
-                container.querySelector(
-                    '.drag-calculator-button'
-                );
-
-
         // Number inputs
-
         this.firstNumber =
-            container.querySelector('.first-number');
+            container.querySelector(
+                '.first-number'
+            );
 
         this.secondNumber =
-            container.querySelector('.second-number');
-
+            container.querySelector(
+                '.second-number'
+            );
 
         // Checkbox
-
         this.clearOperatorCheckbox =
             container.querySelector(
                 '.clear-operator-checkbox'
             );
 
-
         // Main buttons
-
         this.calculateButton =
             container.querySelector(
                 '.calculate-button'
@@ -804,39 +854,14 @@ class Calculator {
                 '.clear-button'
             );
 
-
         // Result
-
         this.resultField =
             container.querySelector(
                 '.result'
             );
 
-            //Operator buttons//
-
-        this.multipleButton =
-            container.querySelector(
-                '.operation-multiply'
-            );
-
-        this.divideButton =
-            container.querySelector(
-                '.operation-divide'
-            );
-
-        this.addButton =
-            container.querySelector(
-                '.operation-add'
-            );
-
-        this.subtractButton =
-            container.querySelector(
-                '.operation-subtract'
-            );
-
 
         // Window controls
-
         this.removeCalculatorButton =
             container.querySelector(
                 '.remove-calculator-button'
@@ -847,340 +872,280 @@ class Calculator {
                 '.minimize-calculator-button'
             );
 
-
         // Calculator title
-
         this.calculatorTitle =
             container.querySelector(
                 '.calculator-window-title'
             );
-                // IMPORTANT:
-            // Give radio buttons unique names FIRST
-                this.setupRadioButtons();
 
-            // Restore calculator UI from its data object
+        // Radio names must be unique for each calculator
+        this.setupRadioButtons();
 
-                this.firstNumber.value =
-                this.data.a;
+        // Restore the interface from the saved state
+        this.firstNumber.value =
+            this.data.a;
 
-                this.secondNumber.value =
-                this.data.b;
+        this.secondNumber.value =
+            this.data.b;
 
-
-                if (this.data.operation !== null) {
-
-                const savedOperator =
-                    this.container.querySelector(
-                        `.operator-radio[value="${this.data.operation}"]`
-                    );
-
-                if (savedOperator !== null) {
-
-                    savedOperator.checked =
-                        true;
-                }
-                }
-
-
-                this.clearOperatorCheckbox.checked =
-                this.data.resetOperation;
-
-
-                this.resultField.textContent =
-                this.data.error ||
-                (
-                    this.data.result === null
-                        ? '—'
-                        : this.data.result
+        if (this.data.operation !== null) {
+            const savedOperator =
+                this.container.querySelector(
+                    `.operator-radio[value="${this.data.operation}"]`
                 );
 
+            if (savedOperator !== null) {
+                savedOperator.checked =
+                    true;
+            }
+        }
 
-                if (this.data.minimized) {
+        this.clearOperatorCheckbox.checked =
+            this.data.resetOperation;
 
-                this.container.classList.add(
-                    'minimized'
-                );
+        this.resultField.textContent =
+            this.data.error ||
+            (
+                this.data.result === null
+                    ? '—'
+                    : this.data.result
+            );
 
-                this.minimizeCalculatorButton.textContent =
-                    '+';
+        if (this.data.minimized) {
+            this.container.classList.add(
+                'minimized'
+            );
 
-                this.minimizeCalculatorButton.setAttribute(
-                    'aria-label',
-                    'Restore calculator'
-                );
+            this.minimizeCalculatorButton.textContent =
+                '+';
 
-                this.minimizedResult.textContent =
-                    this.setupMinimizedResult();
-                }
-       
+            this.minimizeCalculatorButton.setAttribute(
+                'aria-label',
+                'Restore calculator'
+            );
 
-          
+            this.minimizedResult.textContent =
+                this.setupMinimizedResult();
+        }
 
         this.setupCalculator();
         this.createControlPanelRow();
         this.addEventListeners();
-        
-       
     }
-
     setupMinimizedResult() {
-
         const operation =
             this.data.operation === null
                 ? ''
                 : this.data.operation;
-    
-    
+
         let result = '—';
-    
-    
+
         if (this.data.error !== '') {
-    
             result =
                 this.data.error;
-    
+
         } else if (this.data.result !== null) {
-    
             result =
                 this.data.result;
         }
-    
-    
+
         return `${this.data.a} ${operation} ${this.data.b} = ${result}`;
     }
 
     updateControlPanelResult() {
-
         let result = '—';
-    
-    
+
         if (this.data.error !== '') {
-    
             result =
                 this.data.error;
-    
+
         } else if (this.data.result !== null) {
-    
             result =
                 this.data.result;
         }
-    
-    
+
         this.controlResult.textContent =
             `Result: ${result}`;
     }
 
-
     setupCalculator() {
-
         this.calculatorTitle.textContent =
             this.data.title;
     }
 
     createControlPanelRow() {
-
         const controlList =
             document.querySelector(
                 '.calculator-control-list'
             );
-    
-    
-        // Find empty message
+
+        
         const emptyMessage =
             controlList.querySelector(
                 '.control-panel-empty'
             );
-    
-    
-        // Remove empty message if calculator exists
+
+
         if (emptyMessage !== null) {
-    
             emptyMessage.remove();
         }
-    
-    
-        // Create control row
+
+
         const controlRow =
             document.createElement('div');
-    
+
         controlRow.classList.add(
             'calculator-control-row'
         );
-    
+
         controlRow.dataset.calculatorId =
             this.id;
-    
-    
-        // Row is NOT draggable by default
-        controlRow.draggable =
-            false;
-    
-    
-        // Create drag button
+
+  
+        controlRow.draggable = false;
+
+
         const dragControlButton =
             document.createElement('button');
-    
+
         dragControlButton.classList.add(
             'calculator-control-drag'
         );
-    
-        dragControlButton.type =
-            'button';
-    
-        dragControlButton.textContent =
-            '⠿';
-    
+
+        dragControlButton.type = 'button';
+        dragControlButton.textContent = '⠿';
+
         dragControlButton.setAttribute(
             'aria-label',
             'Drag calculator'
         );
-    
-    
+
         // Enable dragging only from drag button
         dragControlButton.addEventListener(
             'mousedown',
             () => {
-    
-                controlRow.draggable =
-                    true;
+                controlRow.draggable = true;
             }
         );
-    
-    
-        // Disable dragging when drag finishes
+
         controlRow.addEventListener(
             'dragend',
             () => {
-        
-                controlRow.draggable =
-                    false;
-        
-                this.app.draggedControlRow =
-                    null;
+                controlRow.draggable = false;
+                this.app.draggedControlRow = null;
             }
         );
-    
-    
-        // Create calculator title
+
         const controlTitle =
-            document.createElement('span');
-    
+            document.createElement('input');
+
         controlTitle.classList.add(
             'calculator-control-title'
         );
-    
-        controlTitle.textContent =
-        this.data.title;
-    
-    
-        // Create result text
+
+        controlTitle.type = 'text';
+        controlTitle.value = this.data.title;
+
+        // Keep title state and calculator card synchronized
+        controlTitle.addEventListener(
+            'input',
+            () => {
+                this.data.title =
+                    controlTitle.value;
+
+                this.calculatorTitle.textContent =
+                    this.data.title;
+
+                this.app.saveCalculators();
+            }
+        );
+
+
         this.controlResult =
             document.createElement('span');
-    
+
         this.controlResult.classList.add(
             'calculator-control-result'
         );
-    
-    
-        // Synchronize result with calculator
+
         this.updateControlPanelResult();
-    
-    
-        // Create Collapse / Expand button
+
+
         const minimizeControlButton =
             document.createElement('button');
-    
+
         minimizeControlButton.classList.add(
             'calculator-control-minimize'
         );
-    
-        minimizeControlButton.type =
-            'button';
-    
-    
-        // Get current calculator state from data
+
+        minimizeControlButton.type = 'button';
+
         minimizeControlButton.textContent =
             this.data.minimized
                 ? 'Expand'
                 : 'Collapse';
-            
-    
-        // Collapse / Expand from Control Panel
+
         minimizeControlButton.addEventListener(
             'click',
             () => {
-    
-                this.minimizeCalculator();
-                this.app.saveCalculators();
+                this.app.toggleCalculator(
+                    this.id
+                );
             }
         );
+
     
-    
-        // Create remove button
         const removeControlButton =
             document.createElement('button');
-    
+
         removeControlButton.classList.add(
             'calculator-control-remove'
         );
-    
-        removeControlButton.type =
-            'button';
-    
-        removeControlButton.textContent =
-            '×';
-    
-    
-        // Remove calculator
+
+        removeControlButton.type = 'button';
+        removeControlButton.textContent = '×';
+
         removeControlButton.addEventListener(
             'click',
             () => {
-    
                 this.app.removeCalculator(
                     this.id
                 );
             }
         );
-    
-    
-        // Add elements to Control Panel row
+
         controlRow.appendChild(
             dragControlButton
         );
-    
+
         controlRow.appendChild(
             controlTitle
         );
-    
+
         controlRow.appendChild(
             this.controlResult
         );
-    
+
         controlRow.appendChild(
             minimizeControlButton
         );
-    
+
         controlRow.appendChild(
             removeControlButton
         );
-    
-    
-        // Add completed row to Control Panel
+
         controlList.appendChild(
             controlRow
         );
     }
 
-
     setupRadioButtons() {
-
         const radioButtons =
             this.container.querySelectorAll(
                 '.operator-radio'
             );
 
         radioButtons.forEach((radio) => {
-
             radio.name =
                 `operation-${this.id}`;
 
@@ -1189,29 +1154,21 @@ class Calculator {
 
             let operationName;
 
-
             if (operation === '+') {
-
                 operationName = 'add';
 
             } else if (operation === '-') {
-
                 operationName = 'subtract';
 
             } else if (operation === '*') {
-
                 operationName = 'multiply';
 
             } else if (operation === '/') {
-
                 operationName = 'divide';
-
             }
-
 
             radio.id =
                 `operation-${operationName}-${this.id}`;
-
 
             const label =
                 radio.nextElementSibling;
@@ -1220,238 +1177,187 @@ class Calculator {
                 'for',
                 radio.id
             );
-
         });
     }
 
-
-    calculate() {
-
-        // Reset previous result/error
-        this.data.result = null;
-        this.data.error = '';
-    
-    
-        // Check empty values BEFORE Number()
-        if (
-            this.data.a === '' ||
-            this.data.b === ''
-        ) {
-    
-            this.data.error =
-                'Fill in all fields before calculating';
-    
-            this.resultField.textContent =
-                this.data.error;
-    
-            this.updateControlPanelResult();
-    
-            return;
+    calculate(a, b, operation) {
+        // Check empty values before Number()
+        if (a === '' || b === '') {
+            return {
+                result: null,
+                error: 'Fill in all fields before calculating'
+            };
         }
-    
-    
-        // Convert strings to numbers
+
         const firstNumberValue =
-            Number(this.data.a);
-    
+            Number(a);
+
         const secondNumberValue =
-            Number(this.data.b);
-    
-    
-        // Check that converted values are valid numbers
+            Number(b);
+
         if (
             !Number.isFinite(firstNumberValue) ||
             !Number.isFinite(secondNumberValue)
         ) {
-    
-            this.data.error =
-                'Please enter valid numbers';
-    
-            this.resultField.textContent =
-                this.data.error;
-    
-            this.updateControlPanelResult();
-    
-            return;
+            return {
+                result: null,
+                error: 'Please enter valid numbers'
+            };
         }
-    
-    
-        // Check operation
-        if (this.data.operation === null) {
-    
-            this.data.error =
-                'Please select an operation';
-    
-            this.resultField.textContent =
-                this.data.error;
-    
-            this.updateControlPanelResult();
-    
-            return;
+
+        if (operation === null) {
+            return {
+                result: null,
+                error: 'Please select an operation'
+            };
         }
-    
-    
-        // Division by zero
+
         if (
-            this.data.operation === '/' &&
+            operation === '/' &&
             secondNumberValue === 0
         ) {
-    
-            this.data.error =
-                'Error';
-    
-            this.resultField.textContent =
-                this.data.error;
-    
-            this.updateControlPanelResult();
-    
-            return;
+            return {
+                result: null,
+                error: 'Error'
+            };
         }
-    
-    
+
         let result;
-    
-    
-        if (this.data.operation === '*') {
-    
+
+        if (operation === '*') {
             result =
                 firstNumberValue *
                 secondNumberValue;
-    
-        } else if (this.data.operation === '/') {
-    
+
+        } else if (operation === '/') {
             result =
                 firstNumberValue /
                 secondNumberValue;
-    
-        } else if (this.data.operation === '+') {
-    
+
+        } else if (operation === '+') {
             result =
                 firstNumberValue +
                 secondNumberValue;
-    
-        } else if (this.data.operation === '-') {
-    
+
+        } else if (operation === '-') {
             result =
                 firstNumberValue -
                 secondNumberValue;
+
+        } else {
+            return {
+                result: null,
+                error: 'Please select a valid operation'
+            };
         }
-    
-    
+
+        // Do not allow Infinity or another invalid result
+        if (!Number.isFinite(result)) {
+            return {
+                result: null,
+                error: 'Error'
+            };
+        }
+
+        return {
+            result: result,
+            error: ''
+        };
+    }
+
+    applyCalculationResult(calculation) {
+        // Update state first
         this.data.result =
-            result;
-    
+            calculation.result;
+
         this.data.error =
-            '';
-    
-    
+            calculation.error;
+
+        // Update calculator interface
         this.resultField.textContent =
-            this.data.result;
-    
+            this.data.error !== ''
+                ? this.data.error
+                : this.data.result;
+
+        // Update Control Panel
         this.updateControlPanelResult();
     }
 
-
     clear() {
-
-        // Update data first
+        // Update state first
         this.data.a = '';
         this.data.b = '';
         this.data.result = null;
         this.data.error = '';
-    
-    
+
         if (this.data.resetOperation) {
-    
             this.data.operation = null;
         }
-    
-    
+
         // Update interface
         this.firstNumber.value =
             this.data.a;
-    
+
         this.secondNumber.value =
             this.data.b;
-    
-    
+
         if (this.data.operation === null) {
-    
             const selectedOperation =
                 this.container.querySelector(
                     '.operator-radio:checked'
                 );
-    
-    
+
             if (selectedOperation !== null) {
-    
                 selectedOperation.checked =
                     false;
             }
         }
-    
-    
+
         this.resultField.textContent =
             '—';
-    
+
         this.updateControlPanelResult();
     }
 
     setMinimized(minimized) {
-
-        // Update data first
+        // Update state first
         this.data.minimized =
             minimized;
-    
-    
-        // Update calculator interface
+
         this.container.classList.toggle(
             'minimized',
             this.data.minimized
         );
-    
-    
-        // Update calculator header button
+
         this.minimizeCalculatorButton.textContent =
             this.data.minimized
                 ? '+'
                 : '−';
-    
-    
+
         this.minimizeCalculatorButton.setAttribute(
             'aria-label',
             this.data.minimized
                 ? 'Restore calculator'
                 : 'Minimize calculator'
         );
-    
-    
-        // Update minimized result
+
         if (this.data.minimized) {
-    
             this.minimizedResult.textContent =
                 this.setupMinimizedResult();
         }
-    
-    
-        // Find this calculator's Control Panel row
+
         const controlRow =
             document.querySelector(
                 `.calculator-control-row[data-calculator-id="${this.id}"]`
             );
-    
-    
+
         if (controlRow !== null) {
-    
             const controlButton =
                 controlRow.querySelector(
                     '.calculator-control-minimize'
                 );
-    
-    
-            // Update Control Panel button
+
             if (controlButton !== null) {
-    
                 controlButton.textContent =
                     this.data.minimized
                         ? 'Expand'
@@ -1459,180 +1365,155 @@ class Calculator {
             }
         }
     }
-    
-    
-    minimizeCalculator() {
-
-        this.setMinimized(
-            !this.data.minimized
-        );
-    }
 
     resetResult() {
-
         this.data.result = null;
         this.data.error = '';
-    
+
         this.resultField.textContent =
             '—';
-    
+
         this.updateControlPanelResult();
     }
 
     addEventListeners() {
-        // First number input
-
-this.firstNumber.addEventListener(
-    'input',
-    () => {
-
-        this.data.a =
-            this.firstNumber.value;
-
-        this.resetResult();
-
-        this.app.saveCalculators();
-    }
-);
-
-
-// Second number input
-
-this.secondNumber.addEventListener(
-    'input',
-    () => {
-
-        this.data.b =
-            this.secondNumber.value;
-
-        this.resetResult();
-
-        this.app.saveCalculators();
-    }
-);
-// Operation
-
-    const operatorRadios =
-        this.container.querySelectorAll(
-            '.operator-radio'
-        );
-
-    operatorRadios.forEach(
-        (radio) => {
-
-            radio.addEventListener(
-                'change',
-                () => {
-
-                    if (!radio.checked) {
-                        return;
-                    }
-
-                    this.data.operation =
-                        radio.value;
-
-                    this.resetResult();
-
-                    this.app.saveCalculators();
-                }
-            );
-        }
-    );
-
-
-    // Reset operation checkbox
-
-    this.clearOperatorCheckbox.addEventListener(
-        'change',
-        () => {
-
-            this.data.resetOperation =
-                this.clearOperatorCheckbox.checked;
-
-            this.app.saveCalculators();
-        }
-    );
-
-        // Calculate
-        this.calculateButton.addEventListener(
-            'click',
+      
+        this.firstNumber.addEventListener(
+            'input',
             () => {
-    
-                this.calculate();
+                this.data.a =
+                    this.firstNumber.value;
+
+                this.resetResult();
                 this.app.saveCalculators();
             }
         );
-    
-    
+
+        
+        this.secondNumber.addEventListener(
+            'input',
+            () => {
+                this.data.b =
+                    this.secondNumber.value;
+
+                this.resetResult();
+                this.app.saveCalculators();
+            }
+        );
+
+   
+        const operatorRadios =
+            this.container.querySelectorAll(
+                '.operator-radio'
+            );
+
+        operatorRadios.forEach(
+            (radio) => {
+                radio.addEventListener(
+                    'change',
+                    () => {
+                        if (!radio.checked) {
+                            return;
+                        }
+
+                        this.data.operation =
+                            radio.value;
+
+                        this.resetResult();
+                        this.app.saveCalculators();
+                    }
+                );
+            }
+        );
+
+
+        this.clearOperatorCheckbox.addEventListener(
+            'change',
+            () => {
+                this.data.resetOperation =
+                    this.clearOperatorCheckbox.checked;
+
+                this.app.saveCalculators();
+            }
+        );
+
+  
+        this.calculateButton.addEventListener(
+            'click',
+            () => {
+                const calculation =
+                    this.calculate(
+                        this.data.a,
+                        this.data.b,
+                        this.data.operation
+                    );
+
+                this.applyCalculationResult(
+                    calculation
+                );
+
+                this.app.saveCalculators();
+            }
+        );
+
         // Enable dragging only from drag button
         this.dragButton.addEventListener(
             'mousedown',
             () => {
-    
                 this.container.draggable = true;
             }
         );
-    
-    
-        // Start dragging calculator
+
+
         this.container.addEventListener(
             'dragstart',
             () => {
-    
                 this.app.draggedCalculator =
                     this.container;
             }
         );
-    
-    
-        // Finish dragging calculator
+
+  
         this.container.addEventListener(
             'dragend',
             () => {
-    
                 this.container.draggable = false;
-    
                 this.app.saveCalculators();
-    
                 this.app.draggedCalculator = null;
             }
         );
-    
-    
-        // Clear calculator
+
+ 
         this.clearButton.addEventListener(
             'click',
             () => {
-    
                 this.clear();
                 this.app.saveCalculators();
             }
         );
-    
-    
-        // Remove calculator using calculator X
+
+       
         this.removeCalculatorButton.addEventListener(
             'click',
             () => {
-    
                 this.app.removeCalculator(
                     this.id
                 );
             }
         );
-    
-    
-        // Minimize calculator
+
+   
         this.minimizeCalculatorButton.addEventListener(
             'click',
             () => {
-    
-                this.minimizeCalculator();
-                this.app.saveCalculators();
+                this.app.toggleCalculator(
+                    this.id
+                );
             }
         );
     }
 }
+
 
 // =========================================
 // START APPLICATION
