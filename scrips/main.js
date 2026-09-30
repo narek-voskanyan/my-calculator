@@ -1027,6 +1027,13 @@ class Calculator {
                 controlRow.draggable = true;
             }
         );
+        
+        dragControlButton.addEventListener(
+            'mouseup',
+            () => {
+                controlRow.draggable = false;
+            }
+        );
 
         controlRow.addEventListener(
             'dragend',
@@ -1461,6 +1468,13 @@ class Calculator {
             'mousedown',
             () => {
                 this.container.draggable = true;
+            }
+        );
+
+        this.dragButton.addEventListener(
+            'mouseup',
+            () => {
+                this.container.draggable = false;
             }
         );
 
