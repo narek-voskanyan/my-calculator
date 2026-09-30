@@ -7,38 +7,14 @@ window.CalculatorApp = function(options) {
     // =========================================
 
     this.initVars = function() {
-
         this.options = options;
 
-        this.calculatorList =
-            document.querySelector(
-                options.calculatorList
-            );
-
-        this.controlList =
-            document.querySelector(
-                options.controlList
-            );
-
-        this.addCalculatorButton =
-            document.querySelector(
-                options.addButton
-            );
-
-        this.collapseAllButton =
-            document.querySelector(
-                options.collapseAllButton
-            );
-
-        this.expandAllButton =
-            document.querySelector(
-                options.expandAllButton
-            );
-
-        this.calculatorTemplate =
-            document.querySelector(
-                options.calculatorTemplate
-            );
+        this.calculatorList = document.querySelector(options.calculatorList);
+        this.controlList = document.querySelector(options.controlList);
+        this.addCalculatorButton = document.querySelector(options.addButton);
+        this.collapseAllButton = document.querySelector(options.collapseAllButton);
+        this.expandAllButton = document.querySelector(options.expandAllButton);
+        this.calculatorTemplate = document.querySelector(options.calculatorTemplate);
 
         this.calculatorCounter = 0;
         this.calculators = [];
@@ -52,27 +28,17 @@ window.CalculatorApp = function(options) {
     // =========================================
 
     this.createCalculator = function(calculatorData = null) {
-
         let data;
 
         if (calculatorData !== null) {
-
             data = calculatorData;
 
-            const idNumber =
-                Number(
-                    String(data.id).replace('calc-', '')
-                );
+            const idNumber = Number(String(data.id).replace('calc-', ''));
 
-            if (
-                Number.isFinite(idNumber) &&
-                idNumber > this.calculatorCounter
-            ) {
+            if (Number.isFinite(idNumber) && idNumber > this.calculatorCounter) {
                 this.calculatorCounter = idNumber;
             }
-
         } else {
-
             this.calculatorCounter++;
 
             data = {
@@ -90,27 +56,14 @@ window.CalculatorApp = function(options) {
             this.calculators.push(data);
         }
 
-
         const calculatorBlueprint =
-            this.calculatorTemplate.content.querySelector(
-                '.calculator'
-            );
+            this.calculatorTemplate.content.querySelector('.calculator');
 
+        const newCalculatorElement = calculatorBlueprint.cloneNode(true);
 
-        const newCalculatorElement =
-            calculatorBlueprint.cloneNode(true);
+        this.calculatorList.appendChild(newCalculatorElement);
 
-
-        this.calculatorList.appendChild(
-            newCalculatorElement
-        );
-
-
-        new Calculator(
-            newCalculatorElement,
-            data,
-            this
-        );
+        new Calculator(newCalculatorElement, data, this);
     };
 
     // =========================================
@@ -118,56 +71,35 @@ window.CalculatorApp = function(options) {
     // =========================================
 
     this.removeCalculator = function(calculatorId) {
+        this.calculators = this.calculators.filter(function(calculatorData) {
+            return calculatorData.id !== calculatorId;
+        });
 
-        this.calculators =
-            this.calculators.filter(
-                function(calculatorData) {
-
-                    return calculatorData.id !== calculatorId;
-                }
-            );
-
-
-        const calculator =
-            this.calculatorList.querySelector(
-                `.calculator[data-calculator-id="${calculatorId}"]`
-            );
+        const calculator = this.calculatorList.querySelector(
+            `.calculator[data-calculator-id="${calculatorId}"]`
+        );
 
         if (calculator !== null) {
-
             calculator.remove();
         }
 
-
-        const controlRow =
-            this.controlList.querySelector(
-                `.calculator-control-row[data-calculator-id="${calculatorId}"]`
-            );
+        const controlRow = this.controlList.querySelector(
+            `.calculator-control-row[data-calculator-id="${calculatorId}"]`
+        );
 
         if (controlRow !== null) {
-
             controlRow.remove();
         }
 
-
-        // Show empty message when there are no calculators
+        // Show the empty message when all calculators are removed.
         if (this.calculators.length === 0) {
+            const emptyMessage = document.createElement('p');
 
-            const emptyMessage =
-                document.createElement('p');
+            emptyMessage.classList.add('control-panel-empty');
+            emptyMessage.textContent = 'The list is empty.';
 
-            emptyMessage.classList.add(
-                'control-panel-empty'
-            );
-
-            emptyMessage.textContent =
-                'The list is empty.';
-
-            this.controlList.appendChild(
-                emptyMessage
-            );
+            this.controlList.appendChild(emptyMessage);
         }
-
 
         this.saveCalculators();
     };
@@ -311,7 +243,7 @@ window.CalculatorApp = function(options) {
 
     this.loadCalculators = function() {
         let calculatorsJSON;
-    
+
         try {
             calculatorsJSON =
                 localStorage.getItem(
@@ -322,20 +254,20 @@ window.CalculatorApp = function(options) {
                 'Failed to read calculators from localStorage:',
                 error
             );
-    
+
             this.createCalculator();
             return;
         }
-    
+
         // First visit: no saved data yet
         if (calculatorsJSON === null) {
             this.createCalculator();
             this.saveCalculators();
             return;
         }
-    
+
         let calculatorsData;
-    
+
         try {
             calculatorsData =
                 JSON.parse(
@@ -346,30 +278,30 @@ window.CalculatorApp = function(options) {
                 'Failed to parse saved calculators:',
                 error
             );
-    
+
             this.createCalculator();
             this.saveCalculators();
             return;
         }
-    
+
         // Saved data must be an array
         if (!Array.isArray(calculatorsData)) {
             console.error(
                 'Saved calculators data is not an array.'
             );
-    
+
             this.createCalculator();
             this.saveCalculators();
             return;
         }
-    
+
         // An empty array is valid.
         // It means the user removed all calculators.
         if (calculatorsData.length === 0) {
             this.calculators = [];
             return;
         }
-    
+
         this.calculators =
             calculatorsData
                 .filter(
@@ -388,7 +320,7 @@ window.CalculatorApp = function(options) {
                         );
                     }
                 );
-    
+
         this.calculators.forEach(
             function(calculatorData) {
                 self.createCalculator(
@@ -396,7 +328,7 @@ window.CalculatorApp = function(options) {
                 );
             }
         );
-    
+
         // Save normalized data
         this.saveCalculators();
     };
@@ -411,12 +343,12 @@ window.CalculatorApp = function(options) {
                 JSON.stringify(
                     this.calculators
                 );
-    
+
             localStorage.setItem(
                 'calculators',
                 calculatorsJSON
             );
-    
+
         } catch (error) {
             console.error(
                 'Failed to save calculators to localStorage:',
@@ -647,7 +579,7 @@ window.CalculatorApp = function(options) {
         this.calculatorList.addEventListener(
             'drop',
             function() {
-        
+
                 self.updateOrderFromCalculatorList();
                 self.syncControlPanelOrder();
                 self.saveCalculators();
@@ -719,7 +651,7 @@ window.CalculatorApp = function(options) {
         this.controlList.addEventListener(
             'drop',
             function() {
-        
+
                 self.updateOrderFromControlList();
                 self.syncCalculatorOrder();
                 self.saveCalculators();
@@ -979,7 +911,7 @@ class Calculator {
                 '.calculator-control-list'
             );
 
-        
+
         const emptyMessage =
             controlList.querySelector(
                 '.control-panel-empty'
@@ -1001,7 +933,7 @@ class Calculator {
         controlRow.dataset.calculatorId =
             this.id;
 
-  
+
         controlRow.draggable = false;
 
 
@@ -1027,7 +959,7 @@ class Calculator {
                 controlRow.draggable = true;
             }
         );
-        
+
         dragControlButton.addEventListener(
             'mouseup',
             () => {
@@ -1101,7 +1033,7 @@ class Calculator {
             }
         );
 
-    
+
         const removeControlButton =
             document.createElement('button');
 
@@ -1384,7 +1316,7 @@ class Calculator {
     }
 
     addEventListeners() {
-      
+
         this.firstNumber.addEventListener(
             'input',
             () => {
@@ -1396,7 +1328,7 @@ class Calculator {
             }
         );
 
-        
+
         this.secondNumber.addEventListener(
             'input',
             () => {
@@ -1408,7 +1340,7 @@ class Calculator {
             }
         );
 
-   
+
         const operatorRadios =
             this.container.querySelectorAll(
                 '.operator-radio'
@@ -1444,7 +1376,7 @@ class Calculator {
             }
         );
 
-  
+
         this.calculateButton.addEventListener(
             'click',
             () => {
@@ -1487,7 +1419,7 @@ class Calculator {
             }
         );
 
-  
+
         this.container.addEventListener(
             'dragend',
             () => {
@@ -1497,7 +1429,7 @@ class Calculator {
             }
         );
 
- 
+
         this.clearButton.addEventListener(
             'click',
             () => {
@@ -1506,7 +1438,7 @@ class Calculator {
             }
         );
 
-       
+
         this.removeCalculatorButton.addEventListener(
             'click',
             () => {
@@ -1516,7 +1448,7 @@ class Calculator {
             }
         );
 
-   
+
         this.minimizeCalculatorButton.addEventListener(
             'click',
             () => {
