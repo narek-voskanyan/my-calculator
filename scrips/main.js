@@ -20,6 +20,10 @@ window.CalculatorApp = function(options) {
         this.calculators = [];
         this.draggedCalculator = null;
         this.draggedControlRow = null;
+        this.dragTargetId = null;
+        this.dragPosition = null;
+        this.controlDragTargetId = null;
+        this.controlDragPosition = null;
     };
 
     // =========================================
@@ -288,6 +292,68 @@ window.CalculatorApp = function(options) {
     };
 
     // =========================================
+    // SYNC ORDER FROM STATE TO DOM
+    // =========================================
+
+    this.syncOrderFromState = function() {
+        this.calculators.forEach(function(calculatorData) {
+            const calculator = self.calculatorList.querySelector(
+                `.calculator[data-calculator-id="${calculatorData.id}"]`
+            );
+
+            const controlRow = self.controlList.querySelector(
+                `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
+            );
+
+            if (calculator !== null) {
+                self.calculatorList.appendChild(calculator);
+            }
+
+            if (controlRow !== null) {
+                self.controlList.appendChild(controlRow);
+            }
+        });
+    };
+
+    // =========================================
+    // MOVE CALCULATOR
+    // =========================================
+
+    this.moveCalculator = function(draggedId, targetId, position) {
+        if (draggedId === targetId) {
+            return;
+        }
+
+        const draggedIndex = this.calculators.findIndex(function(calculatorData) {
+            return calculatorData.id === draggedId;
+        });
+
+        if (draggedIndex === -1) {
+            return;
+        }
+
+        const draggedCalculator = this.calculators.splice(draggedIndex, 1)[0];
+
+        const targetIndex = this.calculators.findIndex(function(calculatorData) {
+            return calculatorData.id === targetId;
+        });
+
+        if (targetIndex === -1) {
+            this.calculators.splice(draggedIndex, 0, draggedCalculator);
+            return;
+        }
+
+        const insertIndex = position === 'after'
+            ? targetIndex + 1
+            : targetIndex;
+
+        this.calculators.splice(insertIndex, 0, draggedCalculator);
+
+        this.syncOrderFromState();
+        this.saveCalculators();
+    };
+
+    // =========================================
     // UPDATE DATA ORDER
     // =========================================
 
@@ -380,7 +446,10 @@ window.CalculatorApp = function(options) {
                 return;
             }
 
-            const elementUnderMouse = document.elementFromPoint(event.clientX, event.clientY);
+            const elementUnderMouse = document.elementFromPoint(
+                event.clientX,
+                event.clientY
+            );
 
             if (elementUnderMouse === null) {
                 return;
@@ -392,20 +461,39 @@ window.CalculatorApp = function(options) {
                 calculatorUnderMouse === null ||
                 calculatorUnderMouse === self.draggedCalculator
             ) {
+                self.dragTargetId = null;
+                self.dragPosition = null;
                 return;
             }
 
             const rectangle = calculatorUnderMouse.getBoundingClientRect();
             const middleX = rectangle.left + rectangle.width / 2;
 
-            if (event.clientX < middleX) {
-                self.calculatorList.insertBefore(self.draggedCalculator, calculatorUnderMouse);
-            } else {
-                self.calculatorList.insertBefore(
-                    self.draggedCalculator,
-                    calculatorUnderMouse.nextSibling
-                );
+            self.dragTargetId = calculatorUnderMouse.dataset.calculatorId;
+            self.dragPosition = event.clientX < middleX ? 'before' : 'after';
+        });
+
+        this.calculatorList.addEventListener('drop', function(event) {
+            event.preventDefault();
+
+            if (
+                self.draggedCalculator === null ||
+                self.dragTargetId === null ||
+                self.dragPosition === null
+            ) {
+                return;
             }
+
+            const draggedId = self.draggedCalculator.dataset.calculatorId;
+
+            self.moveCalculator(
+                draggedId,
+                self.dragTargetId,
+                self.dragPosition
+            );
+
+            self.dragTargetId = null;
+            self.dragPosition = null;
         });
 
         this.calculatorList.addEventListener('drop', function() {
@@ -421,41 +509,51 @@ window.CalculatorApp = function(options) {
 
         this.controlList.addEventListener('dragover', function(event) {
             event.preventDefault();
-
             if (self.draggedControlRow === null) {
                 return;
             }
-
-            const controlRowUnderMouse = event.target.closest('.calculator-control-row');
-
+            const controlRowUnderMouse = event.target.closest(
+                '.calculator-control-row'
+            );
             if (
                 controlRowUnderMouse === null ||
                 controlRowUnderMouse === self.draggedControlRow
             ) {
+                self.controlDragTargetId = null;
+                self.controlDragPosition = null;
                 return;
             }
-
             const rectangle = controlRowUnderMouse.getBoundingClientRect();
             const middleY = rectangle.top + rectangle.height / 2;
-
-            if (event.clientY < middleY) {
-                self.controlList.insertBefore(self.draggedControlRow, controlRowUnderMouse);
-            } else {
-                self.controlList.insertBefore(
-                    self.draggedControlRow,
-                    controlRowUnderMouse.nextSibling
-                );
-            }
+            self.controlDragTargetId = controlRowUnderMouse.dataset.calculatorId;
+            self.controlDragPosition = event.clientY < middleY
+                ? 'before'
+                : 'after';
         });
 
-        this.controlList.addEventListener('drop', function() {
-            self.updateOrderFromControlList();
-            self.syncCalculatorOrder();
-            self.saveCalculators();
+        this.controlList.addEventListener('drop', function(event) {
+            event.preventDefault();
+            if (
+                self.draggedControlRow === null ||
+                self.controlDragTargetId === null ||
+                self.controlDragPosition === null
+            ) {
+                return;
+            }
+            const draggedId = self.draggedControlRow.dataset.calculatorId;
+            self.moveCalculator(
+                draggedId,
+                self.controlDragTargetId,
+                self.controlDragPosition
+            );
+            self.controlDragTargetId = null;
+            self.controlDragPosition = null;
         });
 
         this.controlList.addEventListener('dragend', function() {
             self.draggedControlRow = null;
+            self.controlDragTargetId = null;
+            self.controlDragPosition = null;
         });
     };
 
@@ -927,7 +1025,7 @@ class Calculator {
 // START APPLICATION
 // =========================================
 
-new window.CalculatorApp({
+window.calculatorApp = new window.CalculatorApp({
     calculatorList: '.calculator-list',
     controlList: '.calculator-control-list',
     addButton: '.add-calculator-button',
