@@ -402,12 +402,21 @@ this.toggleCalculator = function(calculatorId) {
     // =========================================
 
     this.setAllCalculatorsMinimized = function(minimized) {
-        const calculators = this.calculatorList.querySelectorAll('.calculator');
-
-        calculators.forEach(function(calculator) {
-            calculator.calculatorInstance.setMinimized(minimized);
+        this.calculators.forEach(function(calculatorData) {
+            // Update shared state first.
+            calculatorData.minimized = minimized;
+            // Update calculator card.
+            const calculator = self.calculatorList.querySelector(
+                `.calculator[data-calculator-id="${calculatorData.id}"]`
+            );
+            if (calculator !== null) {
+                calculator.calculatorInstance.setMinimized(
+                    calculatorData.minimized
+                );
+            }
+            // Update control panel.
+            self.updateControlPanelMinimized(calculatorData);
         });
-
         this.saveCalculators();
     };
 
