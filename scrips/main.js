@@ -206,33 +206,52 @@ window.CalculatorApp = function(options) {
         this.saveCalculators();
     };
 
-    // =========================================
-    // TOGGLE CALCULATOR
-    // =========================================
-
-    this.toggleCalculator = function(calculatorId) {
-        const calculatorData = this.calculators.find(function(data) {
-            return data.id === calculatorId;
-        });
-
-        if (calculatorData === undefined) {
+    this.updateControlPanelMinimized = function(calculatorData) {
+        const controlRow = this.controlList.querySelector(
+            `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
+        );
+        if (controlRow === null) {
             return;
         }
-
-        // Update shared state first.
-        calculatorData.minimized = !calculatorData.minimized;
-
-        // Update the calculator card from the shared state.
-        const calculator = this.calculatorList.querySelector(
-            `.calculator[data-calculator-id="${calculatorId}"]`
+        const minimizeButton = controlRow.querySelector(
+            '.calculator-control-minimize'
         );
-
-        if (calculator !== null) {
-            calculator.calculatorInstance.setMinimized(calculatorData.minimized);
+        if (minimizeButton === null) {
+            return;
         }
-
-        this.saveCalculators();
+        minimizeButton.textContent = calculatorData.minimized
+            ? 'Expand'
+            : 'Collapse';
     };
+
+// =========================================
+// TOGGLE CALCULATOR
+// =========================================
+
+this.toggleCalculator = function(calculatorId) {
+    const calculatorData = this.calculators.find(function(data) {
+        return data.id === calculatorId;
+    });
+
+    if (calculatorData === undefined) {
+        return;
+    }
+
+    // Update shared state first.
+    calculatorData.minimized = !calculatorData.minimized;
+
+    // Update the calculator card from the shared state.
+    const calculator = this.calculatorList.querySelector(
+        `.calculator[data-calculator-id="${calculatorId}"]`
+    );
+
+    if (calculator !== null) {
+        calculator.calculatorInstance.setMinimized(calculatorData.minimized);
+    }
+
+    this.updateControlPanelMinimized(calculatorData);
+    this.saveCalculators();
+};
 
     // =========================================
     // NORMALIZE CALCULATOR DATA
@@ -835,30 +854,14 @@ class Calculator {
     setMinimized(minimized) {
         // Update state first
         this.data.minimized = minimized;
-
         this.container.classList.toggle('minimized', this.data.minimized);
-
         this.minimizeCalculatorButton.textContent = this.data.minimized ? '+' : '−';
-
         this.minimizeCalculatorButton.setAttribute(
             'aria-label',
             this.data.minimized ? 'Restore calculator' : 'Minimize calculator'
         );
-
         if (this.data.minimized) {
             this.minimizedResult.textContent = this.setupMinimizedResult();
-        }
-
-        const controlRow = document.querySelector(
-            `.calculator-control-row[data-calculator-id="${this.id}"]`
-        );
-
-        if (controlRow !== null) {
-            const controlButton = controlRow.querySelector('.calculator-control-minimize');
-
-            if (controlButton !== null) {
-                controlButton.textContent = this.data.minimized ? 'Expand' : 'Collapse';
-            }
         }
     }
 
