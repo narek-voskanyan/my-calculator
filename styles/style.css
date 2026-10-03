@@ -403,16 +403,18 @@ body {
         border-color 0.15s;
 }
 /* =========================
-   CALCULATOR DRAG AND DROP
+   DRAG AND DROP
    ========================= */
 
-/* Original calculator stays in place while dragging. */
-.calculator.drag-source {
+/* Original card or control-panel row stays faded while dragging. */
+.calculator.drag-source,
+.calculator-control-row.drag-source {
     opacity: 0.25;
 }
 
-/* Calculator that is the current drop target. */
-.calculator.drop-target {
+/* Current insertion target. */
+.calculator.drop-target,
+.calculator-control-row.drop-target {
     position: relative;
 
     border: 2px dashed #2878ef !important;
@@ -422,7 +424,8 @@ body {
 }
 
 /* "Insert before" / "Insert after" label. */
-.calculator.drop-target::after {
+.calculator.drop-target::after,
+.calculator-control-row.drop-target::after {
     content: attr(data-drop-label);
 
     position: absolute;
@@ -442,7 +445,6 @@ body {
 
     pointer-events: none;
 }
-
 /* =========================
    CALCULATOR WINDOW HEADER
    ========================= */

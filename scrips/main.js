@@ -511,10 +511,20 @@ this.toggleCalculator = function(calculatorId) {
             ? 'Insert before'
             : 'Insert after';
     };
-    this.clearCardDragState = function() {
-        if (this.draggedCalculator !== null) {
-            this.draggedCalculator.classList.remove('drag-source');
+    this.showControlDropTarget = function(controlRow, position) {
+        const previousTarget = this.controlList.querySelector(
+            '.drop-target'
+        );
+        if (previousTarget !== null) {
+            previousTarget.classList.remove('drop-target');
+            previousTarget.removeAttribute('data-drop-label');
         }
+        controlRow.classList.add('drop-target');
+        controlRow.dataset.dropLabel = position === 'before'
+            ? 'Insert before'
+            : 'Insert after';
+    };
+    this.clearCardDropTarget = function() {
         const dropTarget = this.calculatorList.querySelector(
             '.drop-target'
         );
@@ -522,9 +532,26 @@ this.toggleCalculator = function(calculatorId) {
             dropTarget.classList.remove('drop-target');
             dropTarget.removeAttribute('data-drop-label');
         }
-        this.draggedCalculator = null;
         this.dragTargetId = null;
         this.dragPosition = null;
+    };
+    this.clearControlDropTarget = function() {
+        const dropTarget = this.controlList.querySelector(
+            '.drop-target'
+        );
+        if (dropTarget !== null) {
+            dropTarget.classList.remove('drop-target');
+            dropTarget.removeAttribute('data-drop-label');
+        }
+        this.controlDragTargetId = null;
+        this.controlDragPosition = null;
+    };
+    this.clearCardDragState = function() {
+        if (this.draggedCalculator !== null) {
+            this.draggedCalculator.classList.remove('drag-source');
+        }
+        this.clearCardDropTarget();
+        this.draggedCalculator = null;
     };
     // =========================================
     // BROWSER DRAG AND DROP API
@@ -534,42 +561,36 @@ this.toggleCalculator = function(calculatorId) {
         // Calculator cards
         this.calculatorList.addEventListener('dragover', function(event) {
             event.preventDefault();
-
             if (self.draggedCalculator === null) {
                 return;
             }
-
             const elementUnderMouse = document.elementFromPoint(
                 event.clientX,
                 event.clientY
             );
-
             if (elementUnderMouse === null) {
+                self.clearCardDropTarget();
                 return;
             }
-
             const calculatorUnderMouse = elementUnderMouse.closest('.calculator');
-
             if (
                 calculatorUnderMouse === null ||
                 calculatorUnderMouse === self.draggedCalculator
             ) {
-                self.dragTargetId = null;
-                self.dragPosition = null;
+                self.clearCardDropTarget();
                 return;
             }
-
             const rectangle = calculatorUnderMouse.getBoundingClientRect();
             const middleX = rectangle.left + rectangle.width / 2;
-
             self.dragTargetId = calculatorUnderMouse.dataset.calculatorId;
-            self.dragPosition = event.clientX < middleX ? 'before' : 'after';
+            self.dragPosition = event.clientX < middleX
+                ? 'before'
+                : 'after';
             self.showCardDropTarget(
                 calculatorUnderMouse,
                 self.dragPosition
             );
         });
-
         this.calculatorList.addEventListener('drop', function(event) {
             event.preventDefault();
             if (
@@ -587,36 +608,50 @@ this.toggleCalculator = function(calculatorId) {
             );
             self.clearCardDragState();
         });
-
         // Control Panel
         this.controlList.addEventListener('dragstart', function(event) {
-            self.draggedControlRow = event.target.closest('.calculator-control-row');
+            self.draggedControlRow = event.target.closest(
+                '.calculator-control-row'
+            );
+            if (self.draggedControlRow !== null) {
+                self.draggedControlRow.classList.add('drag-source');
+            }
         });
-
         this.controlList.addEventListener('dragover', function(event) {
             event.preventDefault();
             if (self.draggedControlRow === null) {
                 return;
             }
-            const controlRowUnderMouse = event.target.closest(
+            const elementUnderMouse = document.elementFromPoint(
+                event.clientX,
+                event.clientY
+            );
+            if (elementUnderMouse === null) {
+                self.clearControlDropTarget();
+                return;
+            }
+            const controlRowUnderMouse = elementUnderMouse.closest(
                 '.calculator-control-row'
             );
             if (
                 controlRowUnderMouse === null ||
                 controlRowUnderMouse === self.draggedControlRow
             ) {
-                self.controlDragTargetId = null;
-                self.controlDragPosition = null;
+                self.clearControlDropTarget();
                 return;
             }
             const rectangle = controlRowUnderMouse.getBoundingClientRect();
             const middleY = rectangle.top + rectangle.height / 2;
-            self.controlDragTargetId = controlRowUnderMouse.dataset.calculatorId;
+            self.controlDragTargetId =
+                controlRowUnderMouse.dataset.calculatorId;
             self.controlDragPosition = event.clientY < middleY
                 ? 'before'
                 : 'after';
+            self.showControlDropTarget(
+                controlRowUnderMouse,
+                self.controlDragPosition
+            );
         });
-
         this.controlList.addEventListener('drop', function(event) {
             event.preventDefault();
             if (
@@ -626,20 +661,21 @@ this.toggleCalculator = function(calculatorId) {
             ) {
                 return;
             }
-            const draggedId = self.draggedControlRow.dataset.calculatorId;
+            const draggedId =
+                self.draggedControlRow.dataset.calculatorId;
             self.moveCalculator(
                 draggedId,
                 self.controlDragTargetId,
                 self.controlDragPosition
             );
-            self.controlDragTargetId = null;
-            self.controlDragPosition = null;
+            self.clearControlDropTarget();
         });
-
         this.controlList.addEventListener('dragend', function() {
+            if (self.draggedControlRow !== null) {
+                self.draggedControlRow.classList.remove('drag-source');
+            }
+            self.clearControlDropTarget();
             self.draggedControlRow = null;
-            self.controlDragTargetId = null;
-            self.controlDragPosition = null;
         });
     };
 
