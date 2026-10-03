@@ -160,7 +160,6 @@ body {
     color: #6b7280;
 }
 
-
 /* Collapse / Expand buttons */
 
 .control-panel-buttons {
@@ -441,7 +440,46 @@ body {
 
     overflow: hidden;
 }
+/* =========================
+   CALCULATOR DRAG AND DROP
+   ========================= */
 
+/* Original calculator stays in place while dragging. */
+.calculator.drag-source {
+    opacity: 0.25;
+}
+
+/* Calculator that is the current drop target. */
+.calculator.drop-target {
+    position: relative;
+
+    border: 2px dashed #2878ef !important;
+    background-color: #f1f6ff !important;
+
+    overflow: visible;
+}
+
+/* "Insert before" / "Insert after" label. */
+.calculator.drop-target::after {
+    content: attr(data-drop-label);
+
+    position: absolute;
+    top: -22px;
+    left: 0;
+    z-index: 4;
+
+    padding: 3px 7px;
+
+    font-size: 10px;
+    white-space: nowrap;
+
+    color: #ffffff;
+    background-color: #2878ef;
+
+    border-radius: 4px;
+
+    pointer-events: none;
+}
 
 /* =========================
    CALCULATOR WINDOW HEADER

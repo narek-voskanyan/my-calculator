@@ -133,7 +133,6 @@ window.CalculatorApp = function(options) {
         });
         controlRow.addEventListener('dragend', function() {
             controlRow.draggable = false;
-            self.draggedControlRow = null;
         });
         controlTitle.addEventListener('input', function() {
             self.updateCalculatorTitle(
@@ -499,7 +498,34 @@ this.toggleCalculator = function(calculatorId) {
         this.syncOrderFromState();
         this.saveCalculators();
     };
-
+    this.showCardDropTarget = function(targetCalculator, position) {
+        const previousTarget = this.calculatorList.querySelector(
+            '.drop-target'
+        );
+        if (previousTarget !== null) {
+            previousTarget.classList.remove('drop-target');
+            previousTarget.removeAttribute('data-drop-label');
+        }
+        targetCalculator.classList.add('drop-target');
+        targetCalculator.dataset.dropLabel = position === 'before'
+            ? 'Insert before'
+            : 'Insert after';
+    };
+    this.clearCardDragState = function() {
+        if (this.draggedCalculator !== null) {
+            this.draggedCalculator.classList.remove('drag-source');
+        }
+        const dropTarget = this.calculatorList.querySelector(
+            '.drop-target'
+        );
+        if (dropTarget !== null) {
+            dropTarget.classList.remove('drop-target');
+            dropTarget.removeAttribute('data-drop-label');
+        }
+        this.draggedCalculator = null;
+        this.dragTargetId = null;
+        this.dragPosition = null;
+    };
     // =========================================
     // BROWSER DRAG AND DROP API
     // =========================================
@@ -538,11 +564,14 @@ this.toggleCalculator = function(calculatorId) {
 
             self.dragTargetId = calculatorUnderMouse.dataset.calculatorId;
             self.dragPosition = event.clientX < middleX ? 'before' : 'after';
+            self.showCardDropTarget(
+                calculatorUnderMouse,
+                self.dragPosition
+            );
         });
 
         this.calculatorList.addEventListener('drop', function(event) {
             event.preventDefault();
-
             if (
                 self.draggedCalculator === null ||
                 self.dragTargetId === null ||
@@ -550,17 +579,13 @@ this.toggleCalculator = function(calculatorId) {
             ) {
                 return;
             }
-
             const draggedId = self.draggedCalculator.dataset.calculatorId;
-
             self.moveCalculator(
                 draggedId,
                 self.dragTargetId,
                 self.dragPosition
             );
-
-            self.dragTargetId = null;
-            self.dragPosition = null;
+            self.clearCardDragState();
         });
 
         // Control Panel
@@ -905,39 +930,35 @@ class Calculator {
             this.resetResult();
             this.app.saveCalculators();
         });
-
         this.secondNumber.addEventListener('input', () => {
             this.data.b = this.secondNumber.value;
             this.resetResult();
             this.app.saveCalculators();
         });
-
         const operatorRadios = this.container.querySelectorAll('.operator-radio');
-
         operatorRadios.forEach((radio) => {
             radio.addEventListener('change', () => {
                 if (!radio.checked) {
                     return;
                 }
-
                 this.data.operation = radio.value;
                 this.resetResult();
                 this.app.saveCalculators();
             });
         });
-
         this.clearOperatorCheckbox.addEventListener('change', () => {
             this.data.resetOperation = this.clearOperatorCheckbox.checked;
             this.app.saveCalculators();
         });
-
         this.calculateButton.addEventListener('click', () => {
-            const calculation = this.calculate(this.data.a, this.data.b, this.data.operation);
-
+            const calculation = this.calculate(
+                this.data.a,
+                this.data.b,
+                this.data.operation
+            );
             this.applyCalculationResult(calculation);
             this.app.saveCalculators();
         });
-
         // Enable dragging only from drag button
         this.dragButton.addEventListener('mousedown', () => {
             this.container.draggable = true;
@@ -946,26 +967,23 @@ class Calculator {
         this.dragButton.addEventListener('mouseup', () => {
             this.container.draggable = false;
         });
-
-        this.container.addEventListener('dragstart', () => {
+        this.container.addEventListener('dragstart', (event) => {
             this.app.draggedCalculator = this.container;
+            this.container.classList.add('drag-source');
+            event.dataTransfer.setData('text/plain', this.id);
+            event.dataTransfer.effectAllowed = 'move';
         });
-
         this.container.addEventListener('dragend', () => {
             this.container.draggable = false;
-            this.app.saveCalculators();
-            this.app.draggedCalculator = null;
+            this.app.clearCardDragState();
         });
-
         this.clearButton.addEventListener('click', () => {
             this.clear();
             this.app.saveCalculators();
         });
-
         this.removeCalculatorButton.addEventListener('click', () => {
             this.app.removeCalculator(this.id);
         });
-
         this.minimizeCalculatorButton.addEventListener('click', () => {
             this.app.toggleCalculator(this.id);
         });
