@@ -1,3 +1,295 @@
+class DragRaw {
+    constructor(options) {
+        this.root = options.root;
+        this.axis = options.axis;
+        this.onMove = options.onMove;
+        this.drag = null;
+
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.handleWindowBlur = this.handleWindowBlur.bind(this);
+
+        this.root.addEventListener(
+            'mousedown',
+            this.handleMouseDown
+        );
+    }
+
+    handleMouseDown(event) {
+        if (event.button !== 0) {
+            return;
+        }
+
+        const handle = event.target.closest('[data-drag-handle]');
+
+        if (
+            handle === null ||
+            !this.root.contains(handle)
+        ) {
+            return;
+        }
+
+        const item = handle.closest('[data-id]');
+
+        if (
+            item === null ||
+            !this.root.contains(item)
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const rectangle = item.getBoundingClientRect();
+
+        this.drag = {
+            item: item,
+            id: item.dataset.id,
+            startX: event.clientX,
+            startY: event.clientY,
+            offsetX: event.clientX - rectangle.left,
+            offsetY: event.clientY - rectangle.top,
+            ghost: null,
+            target: null,
+            position: null
+        };
+
+        document.addEventListener(
+            'mousemove',
+            this.handleMouseMove
+        );
+
+        document.addEventListener(
+            'mouseup',
+            this.handleMouseUp
+        );
+
+        document.addEventListener(
+            'keydown',
+            this.handleKeyDown
+        );
+
+        window.addEventListener(
+            'blur',
+            this.handleWindowBlur
+        );
+    }
+
+    handleMouseMove(event) {
+        if (this.drag === null) {
+            return;
+        }
+
+        if (this.drag.ghost === null) {
+            const distance = Math.hypot(
+                event.clientX - this.drag.startX,
+                event.clientY - this.drag.startY
+            );
+
+            if (distance < 5) {
+                return;
+            }
+
+            this.startDrag();
+        }
+
+        this.moveGhost(
+            event.clientX,
+            event.clientY
+        );
+
+        this.updateDropTarget(
+            event.clientX,
+            event.clientY
+        );
+    }
+
+    startDrag() {
+        const rectangle = this.drag.item.getBoundingClientRect();
+
+        this.drag.ghost = this.drag.item.cloneNode(true);
+
+        this.drag.ghost.removeAttribute('data-id');
+        this.drag.ghost.setAttribute('aria-hidden', 'true');
+        this.drag.ghost.inert = true;
+
+        this.drag.ghost.classList.add('drag-ghost');
+        this.drag.ghost.style.width = `${rectangle.width}px`;
+
+        document.body.appendChild(this.drag.ghost);
+
+        this.drag.item.classList.add('drag-source');
+        document.body.classList.add('dragging');
+    }
+
+    moveGhost(clientX, clientY) {
+        this.drag.ghost.style.left =
+            `${clientX - this.drag.offsetX}px`;
+
+        this.drag.ghost.style.top =
+            `${clientY - this.drag.offsetY}px`;
+    }
+
+    updateDropTarget(clientX, clientY) {
+        this.clearDropTarget();
+
+        const elementUnderMouse = document.elementFromPoint(
+            clientX,
+            clientY
+        );
+
+        if (
+            elementUnderMouse === null ||
+            !this.root.contains(elementUnderMouse)
+        ) {
+            return;
+        }
+
+        const target = elementUnderMouse.closest('[data-id]');
+
+        if (
+            target === null ||
+            target === this.drag.item ||
+            !this.root.contains(target)
+        ) {
+            return;
+        }
+
+        const rectangle = target.getBoundingClientRect();
+
+        let position;
+
+        if (this.axis === 'y') {
+            const middle =
+                rectangle.top + rectangle.height / 2;
+
+            position = clientY < middle
+                ? 'before'
+                : 'after';
+        } else {
+            const middle =
+                rectangle.left + rectangle.width / 2;
+
+            position = clientX < middle
+                ? 'before'
+                : 'after';
+        }
+
+        this.drag.target = target;
+        this.drag.position = position;
+
+        target.classList.add('drop-target');
+
+        target.dataset.dropLabel =
+            position === 'before'
+                ? 'Insert before'
+                : 'Insert after';
+    }
+
+    clearDropTarget() {
+        if (this.drag === null) {
+            return;
+        }
+
+        if (this.drag.target !== null) {
+            this.drag.target.classList.remove('drop-target');
+
+            this.drag.target.removeAttribute(
+                'data-drop-label'
+            );
+        }
+
+        this.drag.target = null;
+        this.drag.position = null;
+    }
+
+    handleMouseUp(event) {
+        if (this.drag === null) {
+            return;
+        }
+
+        if (this.drag.ghost === null) {
+            this.cancel();
+            return;
+        }
+
+        this.updateDropTarget(
+            event.clientX,
+            event.clientY
+        );
+
+        const draggedId = this.drag.id;
+
+        const targetId = this.drag.target === null
+            ? null
+            : this.drag.target.dataset.id;
+
+        const position = this.drag.position;
+
+        this.cancel();
+
+        if (
+            targetId !== null &&
+            position !== null
+        ) {
+            this.onMove(
+                draggedId,
+                targetId,
+                position
+            );
+        }
+    }
+
+    handleKeyDown(event) {
+        if (event.key === 'Escape') {
+            this.cancel();
+        }
+    }
+
+    handleWindowBlur() {
+        this.cancel();
+    }
+
+    cancel() {
+        if (this.drag === null) {
+            return;
+        }
+
+        this.clearDropTarget();
+
+        this.drag.item.classList.remove('drag-source');
+
+        if (this.drag.ghost !== null) {
+            this.drag.ghost.remove();
+        }
+
+        document.body.classList.remove('dragging');
+
+        document.removeEventListener(
+            'mousemove',
+            this.handleMouseMove
+        );
+
+        document.removeEventListener(
+            'mouseup',
+            this.handleMouseUp
+        );
+
+        document.removeEventListener(
+            'keydown',
+            this.handleKeyDown
+        );
+
+        window.removeEventListener(
+            'blur',
+            this.handleWindowBlur
+        );
+
+        this.drag = null;
+    }
+}
 window.CalculatorApp = function(options) {
 
     var self = this;
@@ -8,182 +300,211 @@ window.CalculatorApp = function(options) {
 
     this.initVars = function() {
         this.options = options;
-
         this.calculatorList = document.querySelector(options.calculatorList);
         this.controlList = document.querySelector(options.controlList);
         this.addCalculatorButton = document.querySelector(options.addButton);
         this.collapseAllButton = document.querySelector(options.collapseAllButton);
         this.expandAllButton = document.querySelector(options.expandAllButton);
         this.calculatorTemplate = document.querySelector(options.calculatorTemplate);
-
         this.calculatorCounter = 0;
         this.calculators = [];
-        this.draggedCalculator = null;
-        this.draggedControlRow = null;
-        this.dragTargetId = null;
-        this.dragPosition = null;
-        this.controlDragTargetId = null;
-        this.controlDragPosition = null;
     };
 
-    // =========================================
-    // CREATE CALCULATOR
-    // =========================================
+// =========================================
+// CREATE CALCULATOR
+// =========================================
 
-    this.createCalculator = function(calculatorData = null) {
-        let data;
-        if (calculatorData !== null) {
-            data = calculatorData;
-            const idNumber = Number(String(data.id).replace('calc-', ''));
-            if (Number.isFinite(idNumber) && idNumber > this.calculatorCounter) {
-                this.calculatorCounter = idNumber;
-            }
-        } else {
-            this.calculatorCounter++;
-            data = {
-                id: `calc-${this.calculatorCounter}`,
-                title: `Calculator ${this.calculatorCounter}`,
-                a: '',
-                b: '',
-                operation: null,
-                result: null,
-                error: '',
-                minimized: false,
-                resetOperation: false
-            };
-            this.calculators.push(data);
-        }
-        const calculatorBlueprint = this.calculatorTemplate.content.querySelector('.calculator');
-        const newCalculatorElement = calculatorBlueprint.cloneNode(true);
-        this.calculatorList.appendChild(newCalculatorElement);
-        new Calculator(
-            newCalculatorElement,
-            data,
-            this
-        );
-        this.createControlPanelRow(data);
-    };
-    // =========================================
-    // CREATE CONTROL PANEL ROW
-    // =========================================
+this.createCalculator = function(calculatorData = null) {
+    let data;
 
-    this.createControlPanelRow = function(calculatorData) {
-        const emptyMessage = this.controlList.querySelector(
-            '.control-panel-empty'
-        );
-        if (emptyMessage !== null) {
-            emptyMessage.remove();
+    if (calculatorData !== null) {
+        data = calculatorData;
+
+        const idNumber = Number(String(data.id).replace('calc-', ''));
+
+        if (Number.isFinite(idNumber) && idNumber > this.calculatorCounter) {
+            this.calculatorCounter = idNumber;
         }
-        const controlRow = document.createElement('div');
-        controlRow.classList.add('calculator-control-row');
-        controlRow.dataset.calculatorId = calculatorData.id;
-        controlRow.draggable = false;
-        const dragControlButton = document.createElement('button');
-        dragControlButton.classList.add('calculator-control-drag');
-        dragControlButton.type = 'button';
-        dragControlButton.textContent = '⠿';
-        dragControlButton.setAttribute('aria-label', 'Drag calculator');
-        const controlTitle = document.createElement('input');
-        controlTitle.classList.add('calculator-control-title');
-        controlTitle.type = 'text';
-        controlTitle.value = calculatorData.title;
-        const controlResult = document.createElement('span');
-        controlResult.classList.add('calculator-control-result');
-        const minimizeControlButton = document.createElement('button');
-        minimizeControlButton.classList.add('calculator-control-minimize');
-        minimizeControlButton.type = 'button';
-        minimizeControlButton.textContent = calculatorData.minimized
-            ? 'Expand'
-            : 'Collapse';
-        const removeControlButton = document.createElement('button');
-        removeControlButton.classList.add('calculator-control-remove');
-        removeControlButton.type = 'button';
-        removeControlButton.textContent = '×';
-        controlRow.appendChild(dragControlButton);
-        controlRow.appendChild(controlTitle);
-        controlRow.appendChild(controlResult);
-        controlRow.appendChild(minimizeControlButton);
-        controlRow.appendChild(removeControlButton);
-        this.bindControlPanelRowEvents(
-            controlRow,
-            calculatorData
+    } else {
+        this.calculatorCounter++;
+
+        data = {
+            id: `calc-${this.calculatorCounter}`,
+            title: `Calculator ${this.calculatorCounter}`,
+            a: '',
+            b: '',
+            operation: null,
+            result: null,
+            error: '',
+            minimized: false,
+            resetOperation: false
+        };
+
+        this.calculators.push(data);
+    }
+
+    const calculatorBlueprint = this.calculatorTemplate.content.querySelector(
+        '.calculator'
+    );
+
+    const newCalculatorElement = calculatorBlueprint.cloneNode(true);
+
+    this.calculatorList.appendChild(newCalculatorElement);
+
+    new Calculator(
+        newCalculatorElement,
+        data,
+        this
+    );
+
+    this.createControlPanelRow(data);
+};
+
+// =========================================
+// CREATE CONTROL PANEL ROW
+// =========================================
+
+this.createControlPanelRow = function(calculatorData) {
+    const emptyMessage = this.controlList.querySelector(
+        '.control-panel-empty'
+    );
+
+    if (emptyMessage !== null) {
+        emptyMessage.remove();
+    }
+
+    const controlRow = document.createElement('div');
+
+    controlRow.classList.add('calculator-control-row');
+    controlRow.dataset.calculatorId = calculatorData.id;
+    controlRow.dataset.id = calculatorData.id;
+
+    const dragControlButton = document.createElement('button');
+
+    dragControlButton.classList.add('calculator-control-drag');
+    dragControlButton.type = 'button';
+    dragControlButton.textContent = '⠿';
+    dragControlButton.setAttribute('aria-label', 'Drag calculator');
+    dragControlButton.setAttribute('data-drag-handle', '');
+
+    const controlTitle = document.createElement('input');
+
+    controlTitle.classList.add('calculator-control-title');
+    controlTitle.type = 'text';
+    controlTitle.value = calculatorData.title;
+
+    const controlResult = document.createElement('span');
+
+    controlResult.classList.add('calculator-control-result');
+
+    const minimizeControlButton = document.createElement('button');
+
+    minimizeControlButton.classList.add('calculator-control-minimize');
+    minimizeControlButton.type = 'button';
+    minimizeControlButton.textContent = calculatorData.minimized
+        ? 'Expand'
+        : 'Collapse';
+
+    const removeControlButton = document.createElement('button');
+
+    removeControlButton.classList.add('calculator-control-remove');
+    removeControlButton.type = 'button';
+    removeControlButton.textContent = '×';
+
+    controlRow.appendChild(dragControlButton);
+    controlRow.appendChild(controlTitle);
+    controlRow.appendChild(controlResult);
+    controlRow.appendChild(minimizeControlButton);
+    controlRow.appendChild(removeControlButton);
+
+    this.bindControlPanelRowEvents(
+        controlRow,
+        calculatorData
+    );
+
+    this.controlList.appendChild(controlRow);
+
+    this.updateControlPanelResult(calculatorData);
+};
+
+this.bindControlPanelRowEvents = function(controlRow, calculatorData) {
+    const controlTitle = controlRow.querySelector(
+        '.calculator-control-title'
+    );
+
+    const minimizeControlButton = controlRow.querySelector(
+        '.calculator-control-minimize'
+    );
+
+    const removeControlButton = controlRow.querySelector(
+        '.calculator-control-remove'
+    );
+
+    controlTitle.addEventListener('input', function() {
+        self.updateCalculatorTitle(
+            calculatorData.id,
+            controlTitle.value
         );
-        this.controlList.appendChild(controlRow);
-        this.updateControlPanelResult(calculatorData);
-    };
-    this.bindControlPanelRowEvents = function(controlRow, calculatorData) {
-        const dragControlButton = controlRow.querySelector(
-            '.calculator-control-drag'
-        );
-        const controlTitle = controlRow.querySelector(
-            '.calculator-control-title'
-        );
-        const minimizeControlButton = controlRow.querySelector(
-            '.calculator-control-minimize'
-        );
-        const removeControlButton = controlRow.querySelector(
-            '.calculator-control-remove'
-        );
-        // Enable dragging only from the drag button.
-        dragControlButton.addEventListener('mousedown', function() {
-            controlRow.draggable = true;
-        });
-        dragControlButton.addEventListener('mouseup', function() {
-            controlRow.draggable = false;
-        });
-        controlRow.addEventListener('dragend', function() {
-            controlRow.draggable = false;
-        });
-        controlTitle.addEventListener('input', function() {
-            self.updateCalculatorTitle(
-                calculatorData.id,
-                controlTitle.value
-            );
-        });
-        minimizeControlButton.addEventListener('click', function() {
-            self.toggleCalculator(calculatorData.id);
-        });
-        removeControlButton.addEventListener('click', function() {
-            self.removeCalculator(calculatorData.id);
-        });
-    };
-    this.updateCalculatorTitle = function(calculatorId, title) {
-        const calculatorData = this.calculators.find(function(data) {
-            return data.id === calculatorId;
-        });
-        if (calculatorData === undefined) {
-            return;
-        }
-        calculatorData.title = title;
-        const calculator = this.calculatorList.querySelector(
-            `.calculator[data-calculator-id="${calculatorId}"]`
-        );
-        if (calculator !== null) {
-            calculator.calculatorInstance.calculatorTitle.textContent = title;
-        }
-        this.saveCalculators();
-    };
-    this.updateControlPanelResult = function(calculatorData) {
-        const controlRow = this.controlList.querySelector(
-            `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
-        );
-        if (controlRow === null) {
-            return;
-        }
-        const controlResult = controlRow.querySelector(
-            '.calculator-control-result'
-        );
-        if (controlResult === null) {
-            return;
-        }
-        let result = '—';
-        if (calculatorData.error !== '') {
-            result = calculatorData.error;
-        } else if (calculatorData.result !== null) {
-            result = calculatorData.result;
-        }
-        controlResult.textContent = `Result: ${result}`;
-    };
+    });
+
+    minimizeControlButton.addEventListener('click', function() {
+        self.toggleCalculator(calculatorData.id);
+    });
+
+    removeControlButton.addEventListener('click', function() {
+        self.removeCalculator(calculatorData.id);
+    });
+};
+
+this.updateCalculatorTitle = function(calculatorId, title) {
+    const calculatorData = this.calculators.find(function(data) {
+        return data.id === calculatorId;
+    });
+
+    if (calculatorData === undefined) {
+        return;
+    }
+
+    calculatorData.title = title;
+
+    const calculator = this.calculatorList.querySelector(
+        `.calculator[data-calculator-id="${calculatorId}"]`
+    );
+
+    if (calculator !== null) {
+        calculator.calculatorInstance.calculatorTitle.textContent = title;
+    }
+
+    this.saveCalculators();
+};
+
+this.updateControlPanelResult = function(calculatorData) {
+    const controlRow = this.controlList.querySelector(
+        `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
+    );
+
+    if (controlRow === null) {
+        return;
+    }
+
+    const controlResult = controlRow.querySelector(
+        '.calculator-control-result'
+    );
+
+    if (controlResult === null) {
+        return;
+    }
+
+    let result = '—';
+
+    if (calculatorData.error !== '') {
+        result = calculatorData.error;
+    } else if (calculatorData.result !== null) {
+        result = calculatorData.result;
+    }
+
+    controlResult.textContent = `Result: ${result}`;
+};
 
     // =========================================
     // REMOVE CALCULATOR
@@ -436,282 +757,133 @@ this.toggleCalculator = function(calculatorId) {
         });
         this.saveCalculators();
     };
+// =========================================
+// SYNC ORDER FROM STATE TO DOM
+// =========================================
 
-    // =========================================
-    // SYNC ORDER FROM STATE TO DOM
-    // =========================================
-
-    this.syncOrderFromState = function() {
-        this.calculators.forEach(function(calculatorData) {
-            const calculator = self.calculatorList.querySelector(
-                `.calculator[data-calculator-id="${calculatorData.id}"]`
-            );
-
-            const controlRow = self.controlList.querySelector(
-                `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
-            );
-
-            if (calculator !== null) {
-                self.calculatorList.appendChild(calculator);
-            }
-
-            if (controlRow !== null) {
-                self.controlList.appendChild(controlRow);
-            }
-        });
-    };
-
-    // =========================================
-    // MOVE CALCULATOR
-    // =========================================
-
-    this.moveCalculator = function(draggedId, targetId, position) {
-        if (draggedId === targetId) {
-            return;
-        }
-
-        const draggedIndex = this.calculators.findIndex(function(calculatorData) {
-            return calculatorData.id === draggedId;
-        });
-
-        if (draggedIndex === -1) {
-            return;
-        }
-
-        const draggedCalculator = this.calculators.splice(draggedIndex, 1)[0];
-
-        const targetIndex = this.calculators.findIndex(function(calculatorData) {
-            return calculatorData.id === targetId;
-        });
-
-        if (targetIndex === -1) {
-            this.calculators.splice(draggedIndex, 0, draggedCalculator);
-            return;
-        }
-
-        const insertIndex = position === 'after'
-            ? targetIndex + 1
-            : targetIndex;
-
-        this.calculators.splice(insertIndex, 0, draggedCalculator);
-
-        this.syncOrderFromState();
-        this.saveCalculators();
-    };
-    this.showCardDropTarget = function(targetCalculator, position) {
-        const previousTarget = this.calculatorList.querySelector(
-            '.drop-target'
+this.syncOrderFromState = function() {
+    this.calculators.forEach(function(calculatorData) {
+        const calculator = self.calculatorList.querySelector(
+            `.calculator[data-calculator-id="${calculatorData.id}"]`
         );
-        if (previousTarget !== null) {
-            previousTarget.classList.remove('drop-target');
-            previousTarget.removeAttribute('data-drop-label');
-        }
-        targetCalculator.classList.add('drop-target');
-        targetCalculator.dataset.dropLabel = position === 'before'
-            ? 'Insert before'
-            : 'Insert after';
-    };
-    this.showControlDropTarget = function(controlRow, position) {
-        const previousTarget = this.controlList.querySelector(
-            '.drop-target'
+
+        const controlRow = self.controlList.querySelector(
+            `.calculator-control-row[data-calculator-id="${calculatorData.id}"]`
         );
-        if (previousTarget !== null) {
-            previousTarget.classList.remove('drop-target');
-            previousTarget.removeAttribute('data-drop-label');
+
+        if (calculator !== null) {
+            self.calculatorList.appendChild(calculator);
         }
-        controlRow.classList.add('drop-target');
-        controlRow.dataset.dropLabel = position === 'before'
-            ? 'Insert before'
-            : 'Insert after';
-    };
-    this.clearCardDropTarget = function() {
-        const dropTarget = this.calculatorList.querySelector(
-            '.drop-target'
-        );
-        if (dropTarget !== null) {
-            dropTarget.classList.remove('drop-target');
-            dropTarget.removeAttribute('data-drop-label');
+
+        if (controlRow !== null) {
+            self.controlList.appendChild(controlRow);
         }
-        this.dragTargetId = null;
-        this.dragPosition = null;
-    };
-    this.clearControlDropTarget = function() {
-        const dropTarget = this.controlList.querySelector(
-            '.drop-target'
-        );
-        if (dropTarget !== null) {
-            dropTarget.classList.remove('drop-target');
-            dropTarget.removeAttribute('data-drop-label');
-        }
-        this.controlDragTargetId = null;
-        this.controlDragPosition = null;
-    };
-    this.clearCardDragState = function() {
-        if (this.draggedCalculator !== null) {
-            this.draggedCalculator.classList.remove('drag-source');
-        }
-        this.clearCardDropTarget();
-        this.draggedCalculator = null;
-    };
-    // =========================================
-    // BROWSER DRAG AND DROP API
-    // =========================================
-
-    this.initDrag = function() {
-        // Calculator cards
-        this.calculatorList.addEventListener('dragover', function(event) {
-            event.preventDefault();
-            if (self.draggedCalculator === null) {
-                return;
-            }
-            const elementUnderMouse = document.elementFromPoint(
-                event.clientX,
-                event.clientY
-            );
-            if (elementUnderMouse === null) {
-                self.clearCardDropTarget();
-                return;
-            }
-            const calculatorUnderMouse = elementUnderMouse.closest('.calculator');
-            if (
-                calculatorUnderMouse === null ||
-                calculatorUnderMouse === self.draggedCalculator
-            ) {
-                self.clearCardDropTarget();
-                return;
-            }
-            const rectangle = calculatorUnderMouse.getBoundingClientRect();
-            const middleX = rectangle.left + rectangle.width / 2;
-            self.dragTargetId = calculatorUnderMouse.dataset.calculatorId;
-            self.dragPosition = event.clientX < middleX
-                ? 'before'
-                : 'after';
-            self.showCardDropTarget(
-                calculatorUnderMouse,
-                self.dragPosition
-            );
-        });
-        this.calculatorList.addEventListener('drop', function(event) {
-            event.preventDefault();
-            if (
-                self.draggedCalculator === null ||
-                self.dragTargetId === null ||
-                self.dragPosition === null
-            ) {
-                return;
-            }
-            const draggedId = self.draggedCalculator.dataset.calculatorId;
-            self.moveCalculator(
-                draggedId,
-                self.dragTargetId,
-                self.dragPosition
-            );
-            self.clearCardDragState();
-        });
-        // Control Panel
-        this.controlList.addEventListener('dragstart', function(event) {
-            self.draggedControlRow = event.target.closest(
-                '.calculator-control-row'
-            );
-            if (self.draggedControlRow !== null) {
-                self.draggedControlRow.classList.add('drag-source');
-            }
-        });
-        this.controlList.addEventListener('dragover', function(event) {
-            event.preventDefault();
-            if (self.draggedControlRow === null) {
-                return;
-            }
-            const elementUnderMouse = document.elementFromPoint(
-                event.clientX,
-                event.clientY
-            );
-            if (elementUnderMouse === null) {
-                self.clearControlDropTarget();
-                return;
-            }
-            const controlRowUnderMouse = elementUnderMouse.closest(
-                '.calculator-control-row'
-            );
-            if (
-                controlRowUnderMouse === null ||
-                controlRowUnderMouse === self.draggedControlRow
-            ) {
-                self.clearControlDropTarget();
-                return;
-            }
-            const rectangle = controlRowUnderMouse.getBoundingClientRect();
-            const middleY = rectangle.top + rectangle.height / 2;
-            self.controlDragTargetId =
-                controlRowUnderMouse.dataset.calculatorId;
-            self.controlDragPosition = event.clientY < middleY
-                ? 'before'
-                : 'after';
-            self.showControlDropTarget(
-                controlRowUnderMouse,
-                self.controlDragPosition
-            );
-        });
-        this.controlList.addEventListener('drop', function(event) {
-            event.preventDefault();
-            if (
-                self.draggedControlRow === null ||
-                self.controlDragTargetId === null ||
-                self.controlDragPosition === null
-            ) {
-                return;
-            }
-            const draggedId =
-                self.draggedControlRow.dataset.calculatorId;
-            self.moveCalculator(
-                draggedId,
-                self.controlDragTargetId,
-                self.controlDragPosition
-            );
-            self.clearControlDropTarget();
-        });
-        this.controlList.addEventListener('dragend', function() {
-            if (self.draggedControlRow !== null) {
-                self.draggedControlRow.classList.remove('drag-source');
-            }
-            self.clearControlDropTarget();
-            self.draggedControlRow = null;
-        });
-    };
-
-    // =========================================
-    // GLOBAL BUTTON EVENTS
-    // =========================================
-
-    this.bindEvents = function() {
-        this.addCalculatorButton.addEventListener('click', function() {
-            self.createCalculator();
-            self.saveCalculators();
-        });
-
-        this.collapseAllButton.addEventListener('click', function() {
-            self.setAllCalculatorsMinimized(true);
-        });
-
-        this.expandAllButton.addEventListener('click', function() {
-            self.setAllCalculatorsMinimized(false);
-        });
-    };
-
-    // =========================================
-    // INITIALIZATION
-    // =========================================
-
-    this.init = function() {
-        this.initVars();
-        this.loadCalculators();
-        this.bindEvents();
-        this.initDrag();
-    };
-
-    this.init();
+    });
 };
 
+// =========================================
+// MOVE CALCULATOR
+// =========================================
+
+this.moveCalculator = function(draggedId, targetId, position) {
+    if (draggedId === targetId) {
+        return;
+    }
+
+    const draggedIndex = this.calculators.findIndex(function(calculatorData) {
+        return calculatorData.id === draggedId;
+    });
+
+    if (draggedIndex === -1) {
+        return;
+    }
+
+    const draggedCalculator = this.calculators.splice(
+        draggedIndex,
+        1
+    )[0];
+
+    const targetIndex = this.calculators.findIndex(function(calculatorData) {
+        return calculatorData.id === targetId;
+    });
+
+    if (targetIndex === -1) {
+        this.calculators.splice(
+            draggedIndex,
+            0,
+            draggedCalculator
+        );
+
+        return;
+    }
+
+    const insertIndex = position === 'after'
+        ? targetIndex + 1
+        : targetIndex;
+
+    this.calculators.splice(
+        insertIndex,
+        0,
+        draggedCalculator
+    );
+
+    this.syncOrderFromState();
+    this.saveCalculators();
+};
+// =========================================
+// MANUAL DRAG AND DROP
+// =========================================
+
+this.initDrag = function() {
+    const moveCalculator = function(draggedId, targetId, position) {
+        self.moveCalculator(draggedId, targetId, position);
+    };
+
+    this.cardsDrag = new DragRaw({
+        root: this.calculatorList,
+        axis: 'x',
+        onMove: moveCalculator
+    });
+
+    this.panelDrag = new DragRaw({
+        root: this.controlList,
+        axis: 'y',
+        onMove: moveCalculator
+    });
+};
+
+  // =========================================
+// GLOBAL BUTTON EVENTS
+// =========================================
+
+this.bindEvents = function() {
+    this.addCalculatorButton.addEventListener('click', function() {
+        self.createCalculator();
+        self.saveCalculators();
+    });
+
+    this.collapseAllButton.addEventListener('click', function() {
+        self.setAllCalculatorsMinimized(true);
+    });
+
+    this.expandAllButton.addEventListener('click', function() {
+        self.setAllCalculatorsMinimized(false);
+    });
+};
+
+// =========================================
+// INITIALIZATION
+// =========================================
+
+this.init = function() {
+    this.initVars();
+    this.loadCalculators();
+    this.bindEvents();
+    this.initDrag();
+};
+
+this.init();
+};
 
 class Calculator {
 
@@ -722,14 +894,16 @@ class Calculator {
 
         this.container.calculatorInstance = this;
         this.id = this.data.id;
-        this.container.draggable = false;
         this.container.dataset.calculatorId = this.id;
+        this.container.dataset.id = this.id;
 
         // Minimized result
         this.minimizedResult = container.querySelector('.calculator-minimized-result');
 
         // Drag button
         this.dragButton = container.querySelector('.drag-calculator-button');
+
+        this.dragButton.setAttribute('data-drag-handle', '');
 
         // Number inputs
         this.firstNumber = container.querySelector('.first-number');
@@ -963,7 +1137,6 @@ class Calculator {
         this.resultField.classList.remove('error');
         this.app.updateControlPanelResult(this.data);
     }
-
     addEventListeners() {
         this.firstNumber.addEventListener('input', () => {
             this.data.a = this.firstNumber.value;
@@ -998,24 +1171,6 @@ class Calculator {
             );
             this.applyCalculationResult(calculation);
             this.app.saveCalculators();
-        });
-        // Enable dragging only from drag button
-        this.dragButton.addEventListener('mousedown', () => {
-            this.container.draggable = true;
-        });
-
-        this.dragButton.addEventListener('mouseup', () => {
-            this.container.draggable = false;
-        });
-        this.container.addEventListener('dragstart', (event) => {
-            this.app.draggedCalculator = this.container;
-            this.container.classList.add('drag-source');
-            event.dataTransfer.setData('text/plain', this.id);
-            event.dataTransfer.effectAllowed = 'move';
-        });
-        this.container.addEventListener('dragend', () => {
-            this.container.draggable = false;
-            this.app.clearCardDragState();
         });
         this.clearButton.addEventListener('click', () => {
             this.clear();

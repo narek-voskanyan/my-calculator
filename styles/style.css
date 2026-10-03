@@ -400,10 +400,34 @@ body {
    DRAG AND DROP
    ========================= */
 
-/* Original card or control-panel row stays faded while dragging. */
+/* Original card or control-panel row stays in place while dragging. */
 .calculator.drag-source,
 .calculator-control-row.drag-source {
     opacity: 0.25;
+}
+
+/* Floating copy that follows the mouse. */
+.drag-ghost {
+    position: fixed !important;
+    z-index: 9999;
+
+    margin: 0 !important;
+
+    opacity: 0.94;
+
+    pointer-events: none !important;
+
+    transform: rotate(1deg);
+
+    border: 2px solid #2878ef !important;
+
+    box-shadow:
+        0 18px 40px rgba(36, 75, 142, 0.15);
+}
+
+/* Nothing inside the ghost should catch the mouse. */
+.drag-ghost * {
+    pointer-events: none !important;
 }
 
 /* Current insertion target. */
@@ -438,6 +462,16 @@ body {
     border-radius: 4px;
 
     pointer-events: none;
+}
+
+/* Prevent text selection while dragging. */
+body.dragging {
+    user-select: none;
+    cursor: grabbing;
+}
+
+body.dragging * {
+    cursor: grabbing !important;
 }
 /* =========================
    CALCULATOR WINDOW HEADER
