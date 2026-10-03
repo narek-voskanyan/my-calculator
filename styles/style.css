@@ -802,6 +802,11 @@ body {
     color: #22324a;
     overflow-wrap: anywhere;
 }
+.result.error {
+    font-size: 13px;
+    font-weight: 600;
+    color: #bc4141;
+}
 
 
 /* =========================

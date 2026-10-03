@@ -771,9 +771,12 @@ class Calculator {
 
         this.clearOperatorCheckbox.checked = this.data.resetOperation;
 
-        this.resultField.textContent = this.data.error || (
-            this.data.result === null ? '—' : this.data.result
-        );
+        const hasSavedError = this.data.error !== '';
+
+        this.resultField.textContent = hasSavedError
+            ? this.data.error
+            : (this.data.result === null ? '—' : this.data.result);
+        this.resultField.classList.toggle('error', hasSavedError);
 
         if (this.data.minimized) {
             this.container.classList.add('minimized');
@@ -902,14 +905,14 @@ class Calculator {
         // Update state first
         this.data.result = calculation.result;
         this.data.error = calculation.error;
-
         // Update calculator interface
-        this.resultField.textContent = this.data.error !== ''
+        const hasError = this.data.error !== '';
+        this.resultField.textContent = hasError
             ? this.data.error
             : this.data.result;
-
+        this.resultField.classList.toggle('error', hasError);
         // Update Control Panel
-       this.app.updateControlPanelResult(this.data);
+        this.app.updateControlPanelResult(this.data);
     }
 
     clear() {
@@ -934,8 +937,8 @@ class Calculator {
                 selectedOperation.checked = false;
             }
         }
-
         this.resultField.textContent = '—';
+        this.resultField.classList.remove('error');
         this.app.updateControlPanelResult(this.data);
     }
 
@@ -957,6 +960,7 @@ class Calculator {
         this.data.result = null;
         this.data.error = '';
         this.resultField.textContent = '—';
+        this.resultField.classList.remove('error');
         this.app.updateControlPanelResult(this.data);
     }
 
