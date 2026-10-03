@@ -83,6 +83,47 @@ window.CalculatorApp = function(options) {
         dragControlButton.type = 'button';
         dragControlButton.textContent = '⠿';
         dragControlButton.setAttribute('aria-label', 'Drag calculator');
+        const controlTitle = document.createElement('input');
+        controlTitle.classList.add('calculator-control-title');
+        controlTitle.type = 'text';
+        controlTitle.value = calculatorData.title;
+        const controlResult = document.createElement('span');
+        controlResult.classList.add('calculator-control-result');
+        const minimizeControlButton = document.createElement('button');
+        minimizeControlButton.classList.add('calculator-control-minimize');
+        minimizeControlButton.type = 'button';
+        minimizeControlButton.textContent = calculatorData.minimized
+            ? 'Expand'
+            : 'Collapse';
+        const removeControlButton = document.createElement('button');
+        removeControlButton.classList.add('calculator-control-remove');
+        removeControlButton.type = 'button';
+        removeControlButton.textContent = '×';
+        controlRow.appendChild(dragControlButton);
+        controlRow.appendChild(controlTitle);
+        controlRow.appendChild(controlResult);
+        controlRow.appendChild(minimizeControlButton);
+        controlRow.appendChild(removeControlButton);
+        this.bindControlPanelRowEvents(
+            controlRow,
+            calculatorData
+        );
+        this.controlList.appendChild(controlRow);
+        this.updateControlPanelResult(calculatorData);
+    };
+    this.bindControlPanelRowEvents = function(controlRow, calculatorData) {
+        const dragControlButton = controlRow.querySelector(
+            '.calculator-control-drag'
+        );
+        const controlTitle = controlRow.querySelector(
+            '.calculator-control-title'
+        );
+        const minimizeControlButton = controlRow.querySelector(
+            '.calculator-control-minimize'
+        );
+        const removeControlButton = controlRow.querySelector(
+            '.calculator-control-remove'
+        );
         // Enable dragging only from the drag button.
         dragControlButton.addEventListener('mousedown', function() {
             controlRow.draggable = true;
@@ -94,41 +135,18 @@ window.CalculatorApp = function(options) {
             controlRow.draggable = false;
             self.draggedControlRow = null;
         });
-        const controlTitle = document.createElement('input');
-        controlTitle.classList.add('calculator-control-title');
-        controlTitle.type = 'text';
-        controlTitle.value = calculatorData.title;
         controlTitle.addEventListener('input', function() {
             self.updateCalculatorTitle(
                 calculatorData.id,
                 controlTitle.value
             );
         });
-        const controlResult = document.createElement('span');
-        controlResult.classList.add('calculator-control-result');
-        const minimizeControlButton = document.createElement('button');
-        minimizeControlButton.classList.add('calculator-control-minimize');
-        minimizeControlButton.type = 'button';
-        minimizeControlButton.textContent = calculatorData.minimized
-            ? 'Expand'
-            : 'Collapse';
         minimizeControlButton.addEventListener('click', function() {
             self.toggleCalculator(calculatorData.id);
         });
-        const removeControlButton = document.createElement('button');
-        removeControlButton.classList.add('calculator-control-remove');
-        removeControlButton.type = 'button';
-        removeControlButton.textContent = '×';
         removeControlButton.addEventListener('click', function() {
             self.removeCalculator(calculatorData.id);
         });
-        controlRow.appendChild(dragControlButton);
-        controlRow.appendChild(controlTitle);
-        controlRow.appendChild(controlResult);
-        controlRow.appendChild(minimizeControlButton);
-        controlRow.appendChild(removeControlButton);
-        this.controlList.appendChild(controlRow);
-        this.updateControlPanelResult(calculatorData);
     };
     this.updateCalculatorTitle = function(calculatorId, title) {
         const calculatorData = this.calculators.find(function(data) {
