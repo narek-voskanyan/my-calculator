@@ -494,31 +494,37 @@ body {
     justify-content: center;
     align-items: center;
 
-    width: auto;
-    height: auto;
+    width: 24px;
+    height: 24px;
 
-    padding: 3px 7px;
+    padding: 0;
 
     font-size: 14px;
 
-    color: #8393a8;
-    background-color: transparent;
-
     border: none;
-    border-radius: 6px;
+    border-radius: 7px;
 
     cursor: pointer;
 }
 
-
-/* Minimize */
-
 .minimize-calculator-button {
-    color: #4b5563;
+    color: #8393a8;
+    background-color: transparent;
 }
 
 .minimize-calculator-button:hover {
-    background-color: #dbe4ef;
+    color: #2878ef;
+    background-color: #edf5ff;
+}
+
+.remove-calculator-button {
+    color: #8393a8;
+    background-color: transparent;
+}
+
+.remove-calculator-button:hover {
+    color: #e25555;
+    background-color: #fff1f1;
 }
 
 /* Drag */
@@ -545,19 +551,6 @@ body {
 .drag-calculator-button:hover {
     color: #1f3f68;
 }
-
-
-/* Remove */
-
-.remove-calculator-button {
-    color: #4b5563;
-}
-
-.remove-calculator-button:hover {
-    color: #ffffff;
-    background-color: #dc2626;
-}
-
 
 /* =========================
    CALCULATOR CONTENT
