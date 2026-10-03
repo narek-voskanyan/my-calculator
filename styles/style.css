@@ -58,12 +58,6 @@ body {
     gap: 15px;
 }
 
-.calculator-image {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-}
-
 .header-text {
     display: flex;
     flex-direction: column;
@@ -911,11 +905,6 @@ body {
         align-items: flex-start;
 
         gap: 15px;
-    }
-
-    .calculator-image {
-        width: 45px;
-        height: 45px;
     }
 
     .title {
