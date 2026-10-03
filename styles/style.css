@@ -8,11 +8,19 @@
 
 body {
     margin: 0;
-    padding: 30px;
-    font-family: Arial, Helvetica, sans-serif;
+    padding: 48px 32px;
 
-    background-color: #f6f5f3;
-    color: #14233f;
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    font-size: 14px;
+
+    color: #22324a;
+    background-color: #f4f6fa;
 }
 
 
@@ -22,7 +30,9 @@ body {
 
 .calculator-container {
     width: 100%;
-    margin: 0;
+    max-width: 1500px;
+
+    margin: 0 auto;
 }
 
 
@@ -111,13 +121,13 @@ body {
    CALCULATOR WORKSPACE
    ========================= */
 
-   .calculator-workspace {
+.calculator-workspace {
     display: grid;
 
     grid-template-columns:
         300px minmax(0, 1fr);
 
-    gap: 25px;
+    gap: 28px;
 
     align-items: start;
 }
@@ -127,59 +137,45 @@ body {
    CONTROL PANEL
    ========================= */
 
-.control-panel {
+   .control-panel {
+    position: sticky;
+    top: 20px;
     padding: 20px;
-
     background-color: #ffffff;
-
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
+    border: 1px solid #e0e6f0;
+    border-radius: 14px;
 }
 
-
 /* Control panel title */
-
 .control-panel-title {
-    margin: 0;
-
-    font-size: 20px;
-    font-weight: 700;
-
-    color: #14233f;
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #22324a;
 }
 
 
 /* Description */
-
 .control-panel-description {
-    margin: 10px 0 18px;
-
-    font-size: 14px;
-    line-height: 1.5;
-
-    color: #6b7280;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #7c899c;
 }
 
 /* Collapse / Expand buttons */
-
 .control-panel-buttons {
-    display: grid;
+    display: flex;
 
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+    gap: 6px;
 
-    gap: 8px;
-
-    margin-bottom: 20px;
+    margin: 16px 0;
 }
-
 /* =========================================
    CONTROL PANEL CALCULATOR ROW
    ========================================= */
-
    .calculator-control-row {
     position: relative;
-
     display: grid;
 
     grid-template-columns:
@@ -191,28 +187,23 @@ body {
 
     align-items: center;
 
-    row-gap: 10px;
-    column-gap: 10px;
+    row-gap: 5px;
+    column-gap: 5px;
 
-    padding: 12px;
+    padding: 10px;
 
-    margin-bottom: 10px;
-
-    border: 1px solid #d9e2f0;
-    border-radius: 10px;
+    margin-bottom: 0;
 
     background-color: #ffffff;
 
-    transition:
-        box-shadow 0.2s,
-        border-color 0.2s;
-}
+    border: 1px solid #e0e7f2;
+    border-radius: 9px;
 
+    transition:
+    border-color 0.15s;
+}
 .calculator-control-row:hover {
     border-color: #c5d3e6;
-
-    box-shadow:
-        0 3px 10px rgba(0, 0, 0, 0.06);
 }
 
 
@@ -221,12 +212,25 @@ body {
 .calculator-control-title {
     grid-area: title;
 
-    font-size: 14px;
+    width: 100%;
+    min-width: 0;
+
+    padding: 5px 2px;
+
+    font-size: 13px;
     font-weight: 600;
 
-    color: #16335c;
-}
+    color: #334563;
+    background-color: transparent;
 
+    border: 0;
+    border-bottom: 1px solid transparent;
+
+    outline: none;
+}
+.calculator-control-title:focus {
+    border-bottom-color: #2878ef;
+}
 
 /* Result text */
 
@@ -236,134 +240,92 @@ body {
     min-width: 0;
 
     font-size: 11px;
-    color: #4a5f7a;
 
-    white-space: normal;
-    overflow-wrap: anywhere;
+    color: #728299;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-
 .calculator-control-drag {
     grid-area: drag;
-
-    width: 24px;
-    height: 24px;
-
-    padding: 0;
-    border: none;
-    border-radius: 6px;
-
+    padding: 5px;
+    color: #8698af;
     background: transparent;
-    color: #7c8da8;
-
+    border: 0;
     font-size: 18px;
     line-height: 1;
-
     cursor: grab;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    transition:
-        background-color 0.2s,
-        color 0.2s,
-        transform 0.2s;
+    user-select: none;
+    touch-action: none;
 }
-
-
 .calculator-control-drag:hover {
-    background-color: #edf3fa;
-    color: #4a5f7a;
+    color: #2878ef;
+    background: transparent;
 }
-
-
 .calculator-control-drag:active {
     cursor: grabbing;
-    transform: scale(0.92);
 }
 
 
 /* Collapse / Expand button */
-
 .calculator-control-minimize {
     grid-area: minimize;
-
-    padding: 7px 10px;
-
-    border: 1px solid #d2ddeb;
-    border-radius: 9px;
-
+    padding: 6px 9px;
+    font-size: 11px;
+    color: #22324a;
     background-color: #ffffff;
-
-    color: #16335c;
-
-    font-size: 12px;
-
+    border: 1px solid #dce3ee;
+    border-radius: 8px;
     cursor: pointer;
 }
-
 .calculator-control-minimize:hover {
-    background-color: #f5f8fc;
+    background-color: #edf3ff;
+    border-color: #96b8fa;
 }
-
-
 /* Remove X button */
-
 .calculator-control-remove {
     grid-area: remove;
-
     justify-self: end;
     align-self: start;
-
-    border: none;
-    padding: 2px 5px;
-
-    background: none;
-
-    color: #7c8da8;
-
+    padding: 3px 7px;
     font-size: 14px;
-
+    color: #8393a8;
+    background: transparent;
+    border: 0;
     cursor: pointer;
 }
-
 .calculator-control-remove:hover {
-    color: #16335c;
+    color: #d34646;
+    background-color: #fff0f0;
 }
 
 
 .collapse-all-button,
 .expand-all-button {
-    padding: 10px;
-
-    font-size: 13px;
-
-    color: #14233f;
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 11px;
+    color: #22324a;
     background-color: #ffffff;
-
-    border: 1px solid #d1d5db;
+    border: 1px solid #dce3ee;
     border-radius: 8px;
-
     cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease;
 }
-
-
 .collapse-all-button:hover,
 .expand-all-button:hover {
-    background-color: #f3f7fe;
-    border-color: #287df0;
+    background-color: #edf3ff;
+    border-color: #96b8fa;
 }
 
 
 /* =========================
    CONTROL LIST
    ========================= */
-
-.calculator-control-list {
+   .calculator-control-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     min-height: 70px;
 }
 
@@ -377,33 +339,26 @@ body {
 
     color: #6b7280;
 }
-
-
 /* =========================
    CONTROL PANEL FOOTER
    ========================= */
-
 .control-panel-footer {
-    margin-top: 25px;
-    padding-top: 18px;
+    margin-top: 22px;
+    padding-top: 16px;
 
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #edf0f6;
 
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.6;
 
-    color: #55719a;
+    color: #557299;
 }
-
-
 .control-panel-footer strong {
-    color: #14233f;
+    color: #435875;
+    font-weight: 600;
 }
-
-
 .control-panel-footer p {
     margin: 7px 0 0;
-
-    line-height: 1.5;
 }
 
 /* =========================
@@ -414,31 +369,38 @@ body {
     display: grid;
 
     grid-template-columns:
-        repeat(auto-fill, minmax(380px, 1fr));
+        repeat(auto-fit, minmax(245px, 1fr));
 
-    gap: 25px;
+    gap: 18px;
 
     align-items: start;
-    min-width: 0;
-}
 
+    min-width: 0;
+    min-height: 140px;
+}
 
 /* =========================
    INDIVIDUAL CALCULATOR
    ========================= */
 
 .calculator {
+    position: relative;
+
     width: 100%;
+    min-width: 0;
 
     background-color: #ffffff;
 
-    border: 1px solid #d1d5db;
-    border-radius: 12px;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
 
     box-shadow:
-        0 4px 15px rgba(0, 0, 0, 0.06);
+        0 5px 18px rgba(34, 50, 74, 0.02);
 
     overflow: hidden;
+
+    transition:
+        border-color 0.15s;
 }
 /* =========================
    CALCULATOR DRAG AND DROP
@@ -485,23 +447,32 @@ body {
    CALCULATOR WINDOW HEADER
    ========================= */
 
-.calculator-window-header {
+   .calculator-window-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
 
-    padding: 10px 12px 10px 18px;
+    gap: 6px;
 
-    background-color: #eef3f9;
+    padding: 15px 12px;
 
-    border-bottom: 1px solid #d1d5db;
+    background-color: #ffffff;
+
+    border-bottom: 1px solid #edf0f6;
 }
 
 .calculator-window-title {
-    font-size: 16px;
-    font-weight: 600;
+    flex: 1;
 
-    color: #14233f;
+    min-width: 0;
+
+    font-size: 13px;
+    font-weight: 650;
+
+    color: #22324a;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 
@@ -521,23 +492,20 @@ body {
     justify-content: center;
     align-items: center;
 
-    width: 32px;
-    height: 32px;
+    width: auto;
+    height: auto;
 
-    padding: 0;
+    padding: 3px 7px;
 
-    font-size: 20px;
+    font-size: 14px;
 
+    color: #8393a8;
     background-color: transparent;
 
     border: none;
     border-radius: 6px;
 
     cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease;
 }
 
 
@@ -554,17 +522,23 @@ body {
 /* Drag */
 
 .drag-calculator-button {
-    border: none;
-    background: transparent;
-
-    padding: 4px;
+    padding: 5px;
 
     font-size: 18px;
     line-height: 1;
 
-    color: #55719a;
+    color: #8698af;
+    background: transparent;
+
+    border: none;
 
     cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.drag-calculator-button:active {
+    cursor: grabbing;
 }
 .drag-calculator-button:hover {
     color: #1f3f68;
@@ -588,7 +562,7 @@ body {
    ========================= */
 
 .calculator-content {
-    padding: 25px;
+    padding: 18px;
 }
 
 
@@ -596,53 +570,47 @@ body {
    INPUT FIELDS
    ========================= */
 
-.input-fields {
+   .input-fields {
     display: grid;
 
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
 
-    gap: 15px;
-
-    margin-bottom: 25px;
+    gap: 12px;
 }
 
 .input-field-container {
     display: flex;
     flex-direction: column;
-
-    gap: 8px;
-
     min-width: 0;
 }
 
 .input-field-label,
 .operation-label {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 400;
 
-    color: #14233f;
+    color: #718096;
 }
 
 .input-field {
+    display: block;
+
     width: 100%;
     min-width: 0;
 
-    padding: 12px;
+    margin: 7px 0 18px;
+    padding: 10px;
 
-    font-size: 18px;
+    font-size: 14px;
 
-    color: #14233f;
+    color: #243750;
     background-color: #ffffff;
 
-    border: 1.5px solid #d1d5db;
-    border-radius: 8px;
+    border: 1px solid #dce5f1;
+    border-radius: 7px;
 
     outline: none;
-
-    transition:
-        border-color 0.2s,
-        box-shadow 0.2s;
 }
 
 .input-field:hover {
@@ -650,10 +618,12 @@ body {
 }
 
 .input-field:focus {
-    border-color: #287df0;
+    border-color: #2878ef;
 
-    box-shadow:
-        0 0 0 3px rgba(40, 125, 240, 0.15);
+    outline: 3px solid #a5c5ff;
+    outline-offset: 2px;
+
+    box-shadow: none;
 }
 
 
@@ -662,40 +632,34 @@ body {
    ========================= */
 
 .operator-container {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .operation-label {
-    margin: 0 0 10px;
+    margin: 0 0 8px;
 }
 
 
 /* Clear operator checkbox */
-
 .clear-operator-label {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
 
     width: fit-content;
 
     gap: 6px;
 
-    margin-top: 10px;
+    margin: 0 0 16px;
 
-    font-size: 12px;
+    font-size: 10px;
 
-    color: #6b7280;
+    color: #718096;
 
     cursor: pointer;
 }
 
 .clear-operator-checkbox {
-    width: 15px;
-    height: 15px;
-
     margin: 0;
-
     cursor: pointer;
 }
 
@@ -705,16 +669,16 @@ body {
    ========================= */
 
 .operator-buttons {
-    display: grid;
+    display: flex;
 
-    grid-template-columns:
-        repeat(4, minmax(0, 1fr));
+    gap: 7px;
 
-    gap: 8px;
+    margin-bottom: 10px;
 }
 
 .operator-option {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
 }
 
 
@@ -731,30 +695,25 @@ body {
 
 
 /* Visible operator buttons */
-
 .operator-button-style {
     display: flex;
     justify-content: center;
     align-items: center;
 
     width: 100%;
-    height: 55px;
 
-    font-size: 28px;
-    font-weight: 600;
+    padding: 7px 0;
 
-    color: #14233f;
-    background-color: #f3f7fe;
+    font-size: 19px;
+    font-weight: 400;
 
-    border: 1.5px solid #d1d5db;
+    color: #22324a;
+    background-color: #f6f8fc;
+
+    border: 1px solid #dce3ee;
     border-radius: 8px;
 
     cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease;
 }
 
 .operator-button-style:hover {
@@ -789,22 +748,18 @@ body {
 .calculate-button {
     width: 100%;
 
-    padding: 13px;
+    padding: 9px 13px;
 
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 600;
 
     color: #ffffff;
-    background-color: #287df0;
+    background-color: #2878ef;
 
-    border: none;
+    border: 1px solid #2878ef;
     border-radius: 8px;
 
     cursor: pointer;
-
-    transition:
-        background-color 0.2s ease,
-        transform 0.1s ease;
 }
 
 .calculate-button:hover {
@@ -821,33 +776,28 @@ body {
    ========================= */
 
 .result-container {
-    margin-top: 15px;
+    margin: 15px 0;
+    padding: 14px;
 
-    padding: 15px 18px;
+    min-height: 0;
 
-    min-height: 90px;
+    background-color: #edf5ff;
 
-    background-color: #e8f2fc;
-
-    border-radius: 8px;
+    border-radius: 9px;
 }
 
 .result-label {
-    margin: 0 0 5px;
-
-    font-size: 14px;
-
-    color: #4b5563;
+    margin: 0;
+    font-size: 10px;
+    color: #7388a2;
 }
 
 .result {
     display: block;
-
-    font-size: 30px;
-    font-weight: 700;
-
-    color: #14233f;
-
+    margin-top: 5px;
+    font-size: 25px;
+    font-weight: 650;
+    color: #22324a;
     overflow-wrap: anywhere;
 }
 
@@ -856,32 +806,25 @@ body {
    ACTION BUTTONS
    ========================= */
 
-.action-buttons {
+   .action-buttons {
     display: flex;
-
-    margin-top: 15px;
+    margin-top: 0;
 }
 
 .clear-button {
     width: 100%;
-
-    padding: 12px;
-
-    font-size: 16px;
-
-    color: #4b5563;
-    background-color: #f8fafc;
-
-    border: 1.5px solid #d1d5db;
+    padding: 9px 13px;
+    font-size: 11px;
+    color: #22324a;
+    background-color: #ffffff;
+    border: 1px solid #dce3ee;
     border-radius: 8px;
-
     cursor: pointer;
-
-    transition: background-color 0.2s ease;
 }
 
 .clear-button:hover {
-    background-color: #e5e7eb;
+    background-color: #edf3ff;
+    border-color: #96b8fa;
 }
 
 /* =========================
@@ -934,6 +877,12 @@ body {
 /* =========================
    RESPONSIVE
    ========================= */
+@media (min-width: 1350px) {
+    .calculator-list {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+}
 
 @media (max-width: 850px) {
     .calculator-workspace {
